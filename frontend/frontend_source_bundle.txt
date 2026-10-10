@@ -1,0 +1,7581 @@
+
+============================================================
+FILE: .\package.json
+============================================================
+
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "oxlint",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "framer-motion": "^14.0.0",
+    "lucide-react": "^1.52.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.18.4",
+    "tailwindcss": "^4.3.3"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "oxlint": "^1.81.0",
+    "vite": "^8.3.0"
+  }
+}
+
+============================================================
+FILE: .\vite.config.js
+============================================================
+
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
+
+export default defineConfig({
+  plugins: [
+    react(),
+    tailwindcss(),
+  ],
+})
+
+============================================================
+FILE: C:\Users\Annwesh\SurgiTrack-git\frontend\src\App.css
+============================================================
+
+.counter {
+  font-size: 16px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border: 2px solid transparent;
+  transition: border-color 0.3s;
+  margin-bottom: 24px;
+
+  &:hover {
+    border-color: var(--accent-border);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+.hero {
+  position: relative;
+
+  .base,
+  .framework,
+  .vite {
+    inset-inline: 0;
+    margin: 0 auto;
+  }
+
+  .base {
+    width: 170px;
+    position: relative;
+    z-index: 0;
+  }
+
+  .framework,
+  .vite {
+    position: absolute;
+  }
+
+  .framework {
+    z-index: 1;
+    top: 34px;
+    height: 28px;
+    transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg)
+      scale(1.4);
+  }
+
+  .vite {
+    z-index: 0;
+    top: 107px;
+    height: 26px;
+    width: auto;
+    transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg)
+      scale(0.8);
+  }
+}
+
+#center {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  place-content: center;
+  place-items: center;
+  flex-grow: 1;
+
+  @media (max-width: 1024px) {
+    padding: 32px 20px 24px;
+    gap: 18px;
+  }
+}
+
+#next-steps {
+  display: flex;
+  border-top: 1px solid var(--border);
+  text-align: left;
+
+  & > div {
+    flex: 1 1 0;
+    padding: 32px;
+    @media (max-width: 1024px) {
+      padding: 24px 20px;
+    }
+  }
+
+  .icon {
+    margin-bottom: 16px;
+    width: 22px;
+    height: 22px;
+  }
+
+  @media (max-width: 1024px) {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+#docs {
+  border-right: 1px solid var(--border);
+
+  @media (max-width: 1024px) {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+}
+
+#next-steps ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  gap: 8px;
+  margin: 32px 0 0;
+
+  .logo {
+    height: 18px;
+  }
+
+  a {
+    color: var(--text-h);
+    font-size: 16px;
+    border-radius: 6px;
+    background: var(--social-bg);
+    display: flex;
+    padding: 6px 12px;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    transition: box-shadow 0.3s;
+
+    &:hover {
+      box-shadow: var(--shadow);
+    }
+    .button-icon {
+      height: 18px;
+      width: 18px;
+    }
+  }
+
+  @media (max-width: 1024px) {
+    margin-top: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+
+    li {
+      flex: 1 1 calc(50% - 8px);
+    }
+
+    a {
+      width: 100%;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+  }
+}
+
+#spacer {
+  height: 88px;
+  border-top: 1px solid var(--border);
+  @media (max-width: 1024px) {
+    height: 48px;
+  }
+}
+
+.ticks {
+  position: relative;
+  width: 100%;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: -4.5px;
+    border: 5px solid transparent;
+  }
+
+  &::before {
+    left: 0;
+    border-left-color: var(--border);
+  }
+  &::after {
+    right: 0;
+    border-right-color: var(--border);
+  }
+}
+
+============================================================
+FILE: C:\Users\Annwesh\SurgiTrack-git\frontend\src\App.jsx
+============================================================
+
+import {
+  BrowserRouter,
+  Navigate,
+  Route,
+  Routes,
+} from "react-router-dom";
+
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import NewProcedure from "./pages/NewProcedure";
+import RFIDRegistration from "./pages/RFIDRegistration";
+import PreOpScan from "./pages/PreOpScan";
+import ProcedureActive from "./pages/ProcedureActive";
+import PostOpScan from "./pages/PostOpScan";
+import FinalReconciliation from "./pages/FinalReconciliation";
+
+export default function App() {
+  return (
+    <BrowserRouter>
+
+      <Routes>
+
+        <Route
+          path="/"
+          element={
+            <Login />
+          }
+        />
+
+        <Route
+          path="/dashboard"
+          element={
+            <Dashboard />
+          }
+        />
+
+        <Route
+          path="/new-procedure"
+          element={
+            <NewProcedure />
+          }
+        />
+
+        <Route
+          path="/rfid-registration"
+          element={
+            <RFIDRegistration />
+          }
+        />
+
+        <Route
+          path="/pre-op-scan"
+          element={
+            <PreOpScan />
+          }
+        />
+
+        <Route
+          path="/procedure-active"
+          element={
+            <ProcedureActive />
+          }
+        />
+
+        <Route
+          path="/post-op-scan"
+          element={
+            <PostOpScan />
+          }
+        />
+
+        <Route
+          path="/final-reconciliation"
+          element={
+            <FinalReconciliation />
+          }
+        />
+
+        <Route
+          path="*"
+          element={
+            <Navigate
+              to="/"
+              replace
+            />
+          }
+        />
+
+      </Routes>
+
+    </BrowserRouter>
+  );
+}
+
+============================================================
+FILE: C:\Users\Annwesh\SurgiTrack-git\frontend\src\index.css
+============================================================
+
+@import "tailwindcss";
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: #f5f0e8;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+
+  background: #f5f0e8;
+  color: #2b2925;
+
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+::selection {
+  background: rgba(182, 138, 90, 0.22);
+  color: #2b2925;
+}
+
+/* SCROLLBAR */
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f2ece4;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cfc1b1;
+  border-radius: 100px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #b7a491;
+}
+
+/* BUTTON SHIMMER */
+
+.button-sheen::before {
+  content: "";
+  position: absolute;
+
+  top: -20%;
+  bottom: -20%;
+
+  width: 50px;
+
+  left: -90px;
+
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.35),
+    transparent
+  );
+
+  transform: skewX(-22deg);
+
+  transition: left 0.75s ease;
+}
+
+.button-sheen:hover::before {
+  left: calc(100% + 90px);
+}
+
+/* FORM */
+
+input,
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #2b2925;
+
+  -webkit-box-shadow:
+    0 0 0px 1000px #f9f5ef inset;
+
+  transition:
+    background-color 5000s ease-in-out 0s;
+}
+
+============================================================
+FILE: C:\Users\Annwesh\SurgiTrack-git\frontend\src\main.jsx
+============================================================
+
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import "./index.css";
+import App from "./App.jsx";
+
+createRoot(document.getElementById("root")).render(
+  <StrictMode>
+    <App />
+  </StrictMode>
+);
+
+============================================================
+FILE: C:\Users\Annwesh\SurgiTrack-git\frontend\src\pages\Dashboard.jsx
+============================================================
+
+import {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
+import {
+  motion,
+} from "framer-motion";
+
+import {
+  useNavigate,
+} from "react-router-dom";
+
+import {
+  Activity,
+  CalendarDays,
+  CheckCircle2,
+  ChevronRight,
+  Clock3,
+  Eye,
+  History,
+  LogOut,
+  MapPin,
+  Plus,
+  RadioTower,
+  ScanLine,
+  ShieldCheck,
+  Stethoscope,
+  UserRound,
+} from "lucide-react";
+
+import {
+  clearCurrentUser,
+  getCurrentProcedure,
+  getCurrentUser,
+  getProcedureHistory,
+  getRfidScans,
+  getVisionStatus,
+} from "../utils/demoStore";
+
+export default function Dashboard() {
+  const navigate =
+    useNavigate();
+
+  const [
+    activeTab,
+    setActiveTab,
+  ] = useState(
+    "overview"
+  );
+
+  const [
+    user,
+    setUser,
+  ] = useState(
+    getCurrentUser()
+  );
+
+  const [
+    procedure,
+    setProcedure,
+  ] = useState(
+    getCurrentProcedure()
+  );
+
+  const [
+    scans,
+    setScans,
+  ] = useState(
+    getRfidScans()
+  );
+
+  const [
+    vision,
+    setVision,
+  ] = useState(
+    getVisionStatus()
+  );
+
+  const [
+    history,
+    setHistory,
+  ] = useState(
+    getProcedureHistory()
+  );
+
+  useEffect(() => {
+    setUser(
+      getCurrentUser()
+    );
+
+    setProcedure(
+      getCurrentProcedure()
+    );
+
+    setScans(
+      getRfidScans()
+    );
+
+    setVision(
+      getVisionStatus()
+    );
+
+    setHistory(
+      getProcedureHistory()
+    );
+  }, []);
+
+  const historyStats =
+    useMemo(() => {
+      const instruments =
+        history.reduce(
+          (
+            total,
+            record
+          ) =>
+            total +
+            Number(
+              record.instrumentCount ||
+                0
+            ),
+          0
+        );
+
+      const otRooms =
+        new Set(
+          history
+            .map(
+              (
+                record
+              ) =>
+                record.otRoom
+            )
+            .filter(
+              Boolean
+            )
+        );
+
+      return {
+        procedures:
+          history.length,
+
+        instruments,
+
+        otRooms:
+          otRooms.size,
+      };
+    }, [
+      history,
+    ]);
+
+  const logout = () => {
+    clearCurrentUser();
+
+    navigate(
+      "/",
+      {
+        replace: true,
+      }
+    );
+  };
+
+  const mainAction = () => {
+    if (procedure) {
+      navigate(
+        "/rfid-registration"
+      );
+
+      return;
+    }
+
+    navigate(
+      "/new-procedure"
+    );
+  };
+
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-[#F5F0E8] text-[#2D2A26]">
+
+      {/* BACKGROUND */}
+
+      <div className="pointer-events-none fixed inset-0">
+
+        <motion.div
+          animate={{
+            scale: [
+              1.03,
+              1.07,
+              1.03,
+            ],
+          }}
+          transition={{
+            duration: 22,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          className="absolute inset-0 bg-[url('/doctors-bg.jpg')] bg-cover bg-center"
+          style={{
+            opacity: 0.24,
+          }}
+        />
+
+        <div className="absolute inset-0 bg-gradient-to-r from-[#F5F0E8]/96 via-[#F5F0E8]/80 to-[#F5F0E8]/44" />
+
+      </div>
+
+      {/* HEADER */}
+
+      <header className="sticky top-0 z-40 border-b border-[#E1D8CC] bg-[#F8F4EE]/84 backdrop-blur-2xl">
+
+        <div className="flex h-[78px] items-center justify-between px-6 lg:px-8">
+
+          <div className="flex items-center gap-3">
+
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#D3C4B3] bg-[#FFFDF9]">
+
+              <ScanLine className="h-5 w-5 text-[#9A724A]" />
+
+            </div>
+
+            <div>
+
+              <div className="text-sm font-semibold tracking-[0.14em]">
+                SURGITRACK
+              </div>
+
+              <div className="text-[10px] text-[#9C9288]">
+                OT VERIFICATION SYSTEM
+              </div>
+
+            </div>
+
+          </div>
+
+          {/* USER */}
+
+          <div className="flex items-center gap-4">
+
+            <div className="hidden text-right sm:block">
+
+              <div className="text-sm font-medium">
+                {user.name}
+              </div>
+
+              <div className="text-[11px] text-[#968C82]">
+                {user.employeeId} · {user.role}
+              </div>
+
+            </div>
+
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#D2C3B1] bg-[#F6EEE4]">
+
+              <UserRound className="h-4 w-4 text-[#9A724A]" />
+
+            </div>
+
+            <button
+              onClick={
+                logout
+              }
+              title="Logout"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#DED4C8] bg-[#FFFDF9] text-[#968C82]"
+            >
+
+              <LogOut className="h-4 w-4" />
+
+            </button>
+
+          </div>
+
+        </div>
+
+      </header>
+
+      {/* MAIN */}
+
+      <main className="relative z-10 mx-auto max-w-[1550px] px-5 py-9 lg:px-8">
+
+        {/* HERO */}
+
+        <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
+
+          <div>
+
+            <div className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#99714B]">
+              SurgiTrack Control Centre
+            </div>
+
+            <h1 className="text-3xl font-semibold tracking-tight lg:text-4xl">
+
+              Hello, {user.name}.
+
+            </h1>
+
+            <p className="mt-2 text-sm text-[#8B8178]">
+
+              {procedure
+                ? `${procedure.caseId} · ${procedure.otRoom}`
+                : "Ready for a new procedure"}
+
+            </p>
+
+          </div>
+
+          {activeTab ===
+            "overview" && (
+
+            <motion.button
+              whileHover={{
+                y: -3,
+              }}
+              onClick={
+                mainAction
+              }
+              className="button-sheen relative flex h-12 items-center justify-center overflow-hidden rounded-xl bg-[#A27A53] px-5 text-sm font-semibold text-white"
+            >
+
+              <span className="relative z-10 flex items-center gap-2">
+
+                {procedure ? (
+                  <>
+                    Continue Procedure
+
+                    <ChevronRight className="h-4 w-4" />
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-4 w-4" />
+
+                    Start New Procedure
+                  </>
+                )}
+
+              </span>
+
+            </motion.button>
+
+          )}
+
+        </div>
+
+        {/* TABS */}
+
+        <div className="mt-8 inline-flex rounded-2xl border border-[#DDD2C5] bg-[#FFFDF9]/80 p-1.5 backdrop-blur-xl">
+
+          <TabButton
+            active={
+              activeTab ===
+              "overview"
+            }
+            icon={
+              Activity
+            }
+            label="Overview"
+            onClick={() =>
+              setActiveTab(
+                "overview"
+              )
+            }
+          />
+
+          <TabButton
+            active={
+              activeTab ===
+              "history"
+            }
+            icon={
+              History
+            }
+            label={`My History (${history.length})`}
+            onClick={() =>
+              setActiveTab(
+                "history"
+              )
+            }
+          />
+
+        </div>
+
+        {/* ==================================================
+            OVERVIEW
+        ================================================== */}
+
+        {activeTab ===
+          "overview" && (
+
+          <motion.div
+            key="overview"
+            initial={{
+              opacity: 0,
+              y: 12,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
+          >
+
+            {/* METRICS */}
+
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+
+              <StatCard
+                icon={
+                  Stethoscope
+                }
+                title="Active Procedure"
+                value={
+                  procedure
+                    ? "01"
+                    : "00"
+                }
+                caption={
+                  procedure
+                    ? procedure.caseId
+                    : "No active case"
+                }
+              />
+
+              <StatCard
+                icon={
+                  RadioTower
+                }
+                title="Current RFID"
+                value={String(
+                  scans.length
+                ).padStart(
+                  2,
+                  "0"
+                )}
+                caption="Active procedure"
+              />
+
+              <StatCard
+                icon={
+                  Eye
+                }
+                title="Pre-Op Vision"
+                value={
+                  vision.preOpCaptured
+                    ? "Ready"
+                    : "—"
+                }
+                caption="Current procedure"
+              />
+
+              <StatCard
+                icon={
+                  History
+                }
+                title="Completed Procedures"
+                value={String(
+                  history.length
+                ).padStart(
+                  2,
+                  "0"
+                )}
+                caption="Your history"
+              />
+
+            </div>
+
+            {/* CURRENT PROCEDURE */}
+
+            <div className="mt-6 grid gap-6 xl:grid-cols-[1.35fr_.65fr]">
+
+              <section className="rounded-[28px] border border-[#DED3C6] bg-[#FFFDF9]/86 p-7 shadow-[0_20px_55px_rgba(80,62,42,.06)] backdrop-blur-xl">
+
+                <div className="flex items-center justify-between">
+
+                  <div>
+
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[#98704A]">
+                      Current Workflow
+                    </div>
+
+                    <h2 className="mt-2 text-xl font-semibold">
+                      Active procedure
+                    </h2>
+
+                  </div>
+
+                  {procedure && (
+
+                    <span className="rounded-full border border-[#BDD0B8] bg-[#F2F8EF] px-3 py-1.5 text-[10px] font-semibold text-[#698067]">
+                      ACTIVE
+                    </span>
+
+                  )}
+
+                </div>
+
+                {!procedure ? (
+
+                  <div className="flex min-h-[300px] flex-col items-center justify-center text-center">
+
+                    <div className="flex h-16 w-16 items-center justify-center rounded-[22px] bg-[#F2E8DC]">
+
+                      <Stethoscope className="h-7 w-7 text-[#A27A53]" />
+
+                    </div>
+
+                    <h3 className="mt-5 font-semibold">
+                      No active procedure
+                    </h3>
+
+                    <p className="mt-2 max-w-md text-sm leading-6 text-[#968C82]">
+                      Completed procedures remain safely stored in your history. Start a new case when ready.
+                    </p>
+
+                    <button
+                      onClick={() =>
+                        navigate(
+                          "/new-procedure"
+                        )
+                      }
+                      className="mt-6 flex h-11 items-center gap-2 rounded-xl bg-[#A27A53] px-5 text-sm font-semibold text-white"
+                    >
+
+                      <Plus className="h-4 w-4" />
+
+                      Add Procedure
+
+                    </button>
+
+                  </div>
+
+                ) : (
+
+                  <div className="mt-7 grid gap-4 sm:grid-cols-2">
+
+                    <InfoBox
+                      title="Case ID"
+                      value={
+                        procedure.caseId
+                      }
+                    />
+
+                    <InfoBox
+                      title="Operating Theatre"
+                      value={
+                        procedure.otRoom
+                      }
+                    />
+
+                    <InfoBox
+                      title="Procedure"
+                      value={
+                        procedure.procedureName
+                      }
+                    />
+
+                    <InfoBox
+                      title="Lead Surgeon"
+                      value={
+                        procedure.surgeon
+                      }
+                    />
+
+                  </div>
+
+                )}
+
+              </section>
+
+              {/* PERSON SUMMARY */}
+
+              <section className="rounded-[28px] border border-[#DED3C6] bg-[#FFFDF9]/86 p-7 backdrop-blur-xl">
+
+                <div className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[#98704A]">
+                  My Activity
+                </div>
+
+                <h2 className="mt-2 text-xl font-semibold">
+                  OT summary
+                </h2>
+
+                <div className="mt-6 space-y-3">
+
+                  <ActivityRow
+                    icon={
+                      CheckCircle2
+                    }
+                    title="Procedures attended"
+                    value={
+                      historyStats.procedures
+                    }
+                  />
+
+                  <ActivityRow
+                    icon={
+                      RadioTower
+                    }
+                    title="Instruments handled"
+                    value={
+                      historyStats.instruments
+                    }
+                  />
+
+                  <ActivityRow
+                    icon={
+                      MapPin
+                    }
+                    title="OT rooms attended"
+                    value={
+                      historyStats.otRooms
+                    }
+                  />
+
+                </div>
+
+                <button
+                  onClick={() =>
+                    setActiveTab(
+                      "history"
+                    )
+                  }
+                  className="mt-6 flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#D8CDC0] bg-[#FAF6F0] text-sm font-medium text-[#75695F]"
+                >
+
+                  <History className="h-4 w-4" />
+
+                  View My History
+
+                </button>
+
+              </section>
+
+            </div>
+
+          </motion.div>
+
+        )}
+
+        {/* ==================================================
+            HISTORY
+        ================================================== */}
+
+        {activeTab ===
+          "history" && (
+
+          <motion.div
+            key="history"
+            initial={{
+              opacity: 0,
+              y: 12,
+            }}
+            animate={{
+              opacity: 1,
+              y: 0,
+            }}
+          >
+
+            {/* HISTORY METRICS */}
+
+            <div className="mt-6 grid gap-4 md:grid-cols-3">
+
+              <HistoryMetric
+                icon={
+                  Stethoscope
+                }
+                label="Procedures Attended"
+                value={
+                  historyStats.procedures
+                }
+              />
+
+              <HistoryMetric
+                icon={
+                  RadioTower
+                }
+                label="Instruments Used"
+                value={
+                  historyStats.instruments
+                }
+              />
+
+              <HistoryMetric
+                icon={
+                  MapPin
+                }
+                label="OT Rooms Attended"
+                value={
+                  historyStats.otRooms
+                }
+              />
+
+            </div>
+
+            {/* HISTORY LIST */}
+
+            <section className="mt-6 overflow-hidden rounded-[28px] border border-[#DED3C6] bg-[#FFFDF9]/88 shadow-[0_20px_55px_rgba(80,62,42,.06)] backdrop-blur-xl">
+
+              <div className="border-b border-[#E8E0D7] px-6 py-5">
+
+                <h2 className="font-semibold">
+                  Procedure history
+                </h2>
+
+                <p className="mt-1 text-xs text-[#958B81]">
+                  Procedures attended by {user.name}
+                </p>
+
+              </div>
+
+              {history.length ===
+              0 ? (
+
+                <div className="flex min-h-[350px] flex-col items-center justify-center px-6 text-center">
+
+                  <History className="h-9 w-9 text-[#A27A53]" />
+
+                  <h3 className="mt-5 font-semibold">
+                    No completed procedures yet
+                  </h3>
+
+                  <p className="mt-2 max-w-md text-sm leading-6 text-[#978D83]">
+                    Once a procedure is completed and archived, it will appear here.
+                  </p>
+
+                </div>
+
+              ) : (
+
+                <div className="space-y-4 p-5">
+
+                  {history.map(
+                    (
+                      record,
+                      index
+                    ) => (
+
+                      <HistoryCard
+                        key={
+                          record.historyId
+                        }
+                        record={
+                          record
+                        }
+                        index={
+                          index
+                        }
+                      />
+
+                    )
+                  )}
+
+                </div>
+
+              )}
+
+            </section>
+
+          </motion.div>
+
+        )}
+
+      </main>
+
+    </div>
+  );
+}
+
+/* ======================================================
+   COMPONENTS
+====================================================== */
+
+function TabButton({
+  active,
+  icon: Icon,
+  label,
+  onClick,
+}) {
+  return (
+    <button
+      onClick={
+        onClick
+      }
+      className={`flex h-10 items-center gap-2 rounded-xl px-4 text-sm font-medium transition ${
+        active
+          ? "bg-[#A27A53] text-white shadow-md"
+          : "text-[#84796F] hover:bg-[#F4ECE2]"
+      }`}
+    >
+
+      <Icon className="h-4 w-4" />
+
+      {label}
+
+    </button>
+  );
+}
+
+function StatCard({
+  icon: Icon,
+  title,
+  value,
+  caption,
+}) {
+  return (
+    <motion.div
+      whileHover={{
+        y: -4,
+      }}
+      className="rounded-[22px] border border-[#DED3C6] bg-[#FFFDF9]/86 p-5 backdrop-blur-xl"
+    >
+
+      <Icon className="h-5 w-5 text-[#A27A53]" />
+
+      <div className="mt-5 text-2xl font-semibold">
+        {value}
+      </div>
+
+      <div className="mt-2 text-sm font-medium">
+        {title}
+      </div>
+
+      <div className="mt-1 text-xs text-[#978D83]">
+        {caption}
+      </div>
+
+    </motion.div>
+  );
+}
+
+function InfoBox({
+  title,
+  value,
+}) {
+  return (
+    <div className="rounded-2xl border border-[#E2D9CF] bg-[#FAF7F2] p-5">
+
+      <div className="text-[10px] font-semibold uppercase tracking-[0.13em] text-[#9C9288]">
+        {title}
+      </div>
+
+      <div className="mt-2 text-sm font-medium">
+        {value || "—"}
+      </div>
+
+    </div>
+  );
+}
+
+function ActivityRow({
+  icon: Icon,
+  title,
+  value,
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-2xl border border-[#E3DAD0] bg-[#FAF7F2] px-4 py-4">
+
+      <div className="flex items-center gap-3">
+
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F2E8DC]">
+
+          <Icon className="h-4 w-4 text-[#A27A53]" />
+
+        </div>
+
+        <span className="text-sm text-[#746A61]">
+          {title}
+        </span>
+
+      </div>
+
+      <span className="text-lg font-semibold">
+        {value}
+      </span>
+
+    </div>
+  );
+}
+
+function HistoryMetric({
+  icon: Icon,
+  label,
+  value,
+}) {
+  return (
+    <div className="rounded-[22px] border border-[#DED3C6] bg-[#FFFDF9]/86 p-6 backdrop-blur-xl">
+
+      <Icon className="h-5 w-5 text-[#A27A53]" />
+
+      <div className="mt-5 text-3xl font-semibold">
+        {value}
+      </div>
+
+      <div className="mt-2 text-sm text-[#847A70]">
+        {label}
+      </div>
+
+    </div>
+  );
+}
+
+function HistoryCard({
+  record,
+  index,
+}) {
+  const completedDate =
+    record.completedAt
+      ? new Date(
+          record.completedAt
+        )
+      : null;
+
+  return (
+    <motion.div
+      initial={{
+        opacity: 0,
+        y: 8,
+      }}
+      animate={{
+        opacity: 1,
+        y: 0,
+      }}
+      transition={{
+        delay:
+          index * 0.05,
+      }}
+      className="rounded-[22px] border border-[#DED4C8] bg-[#FBF8F4] p-5"
+    >
+
+      {/* TOP */}
+
+      <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
+
+        <div>
+
+          <div className="flex flex-wrap items-center gap-2">
+
+            <div className="text-lg font-semibold">
+              {record.procedureName}
+            </div>
+
+            <span className="rounded-full bg-[#E5EFE2] px-3 py-1 text-[9px] font-semibold text-[#698067]">
+              COMPLETED
+            </span>
+
+          </div>
+
+          <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-xs text-[#887E74]">
+
+            <span>
+              {record.caseId}
+            </span>
+
+            <span className="flex items-center gap-1.5">
+
+              <MapPin className="h-3.5 w-3.5" />
+
+              {record.otRoom}
+
+            </span>
+
+            {completedDate && (
+
+              <span className="flex items-center gap-1.5">
+
+                <CalendarDays className="h-3.5 w-3.5" />
+
+                {completedDate.toLocaleDateString()}
+
+              </span>
+
+            )}
+
+          </div>
+
+        </div>
+
+        <div className="rounded-xl bg-[#F0E5D8] px-4 py-2 text-center">
+
+          <div className="text-lg font-semibold text-[#8E6844]">
+            {record.instrumentCount}
+          </div>
+
+          <div className="text-[9px] uppercase tracking-wider text-[#9A8775]">
+            Instruments
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* DETAILS */}
+
+      <div className="mt-5 grid gap-3 md:grid-cols-3">
+
+        <HistoryInfo
+          title="Lead Surgeon"
+          value={
+            record.surgeon
+          }
+        />
+
+        <HistoryInfo
+          title="Attended As"
+          value={
+            record
+              .attendedBy
+              ?.role ||
+            "—"
+          }
+        />
+
+        <HistoryInfo
+          title="Completed"
+          value={
+            completedDate
+              ? completedDate.toLocaleTimeString(
+                  [],
+                  {
+                    hour:
+                      "2-digit",
+                    minute:
+                      "2-digit",
+                  }
+                )
+              : "—"
+          }
+        />
+
+      </div>
+
+      {/* INSTRUMENTS */}
+
+      <div className="mt-5 border-t border-[#E6DDD3] pt-4">
+
+        <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.13em] text-[#968B81]">
+          Instruments / RFID Records
+        </div>
+
+        {record.rfidScans
+          ?.length > 0 ? (
+
+          <div className="flex flex-wrap gap-2">
+
+            {record.rfidScans.map(
+              (
+                scan
+              ) => {
+
+                const label =
+                  scan
+                    ?.instrument
+                    ?.name ||
+                  scan.uid;
+
+                return (
+                  <span
+                    key={
+                      scan.uid
+                    }
+                    className="rounded-lg border border-[#DDD2C6] bg-[#FFFDF9] px-3 py-2 font-mono text-[10px] text-[#74695F]"
+                  >
+                    {label}
+                  </span>
+                );
+              }
+            )}
+
+          </div>
+
+        ) : (
+
+          <div className="text-xs text-[#968C82]">
+            No instrument records.
+          </div>
+
+        )}
+
+      </div>
+
+    </motion.div>
+  );
+}
+
+function HistoryInfo({
+  title,
+  value,
+}) {
+  return (
+    <div className="rounded-xl border border-[#E5DCD2] bg-[#FFFDF9] p-3">
+
+      <div className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[#9A9085]">
+        {title}
+      </div>
+
+      <div className="mt-1.5 text-xs font-medium">
+        {value || "—"}
+      </div>
+
+    </div>
+  );
+}
+
+============================================================
+FILE: C:\Users\Annwesh\SurgiTrack-git\frontend\src\pages\FinalReconciliation.jsx
+============================================================
+
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  motion,
+} from "framer-motion";
+
+import {
+  useNavigate,
+} from "react-router-dom";
+
+import {
+  ArrowLeft,
+  CheckCircle2,
+  Clock3,
+  Database,
+  Eye,
+  LoaderCircle,
+  RadioTower,
+  ScanLine,
+  ShieldAlert,
+  ShieldCheck,
+  UserRound,
+} from "lucide-react";
+
+import {
+  archiveCurrentProcedure,
+  getCurrentProcedure,
+  getCurrentUser,
+  getRfidScans,
+  getVisionStatus,
+} from "../utils/demoStore";
+
+export default function FinalReconciliation() {
+  const navigate =
+    useNavigate();
+
+  const user =
+    getCurrentUser();
+
+  const [
+    procedure,
+    setProcedure,
+  ] = useState(null);
+
+  const [
+    scans,
+    setScans,
+  ] = useState([]);
+
+  const [
+    vision,
+    setVision,
+  ] = useState({
+    preOpCaptured: false,
+    postOpCaptured: false,
+  });
+
+  const [
+    completing,
+    setCompleting,
+  ] = useState(false);
+
+  /* =====================================================
+     LOAD CURRENT PROCEDURE DATA
+  ===================================================== */
+
+  useEffect(() => {
+    setProcedure(
+      getCurrentProcedure()
+    );
+
+    setScans(
+      getRfidScans()
+    );
+
+    setVision(
+      getVisionStatus()
+    );
+  }, []);
+
+  const acquisitionComplete =
+    scans.length > 0 &&
+    vision.preOpCaptured ===
+      true &&
+    vision.postOpCaptured ===
+      true;
+
+  /* =====================================================
+     COMPLETE AND ARCHIVE
+  ===================================================== */
+
+  const completeProcedure =
+    () => {
+      if (
+        !acquisitionComplete ||
+        completing
+      ) {
+        return;
+      }
+
+      setCompleting(true);
+
+      const archived =
+        archiveCurrentProcedure();
+
+      if (!archived) {
+        setCompleting(false);
+        return;
+      }
+
+      /*
+       * archiveCurrentProcedure():
+       *
+       * saves case to history
+       * clears active procedure
+       * clears current RFID
+       * clears current vision state
+       */
+
+      navigate(
+        "/dashboard",
+        {
+          replace: true,
+        }
+      );
+    };
+
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-[#F5F0E8] text-[#2D2A26]">
+
+      {/* BACKGROUND */}
+
+      <div className="pointer-events-none fixed inset-0">
+
+        <div
+          className="absolute inset-0 bg-[url('/doctors-bg.jpg')] bg-cover bg-center"
+          style={{
+            opacity: 0.17,
+          }}
+        />
+
+        <div className="absolute inset-0 bg-gradient-to-r from-[#F5F0E8]/98 via-[#F5F0E8]/90 to-[#F5F0E8]/58" />
+
+      </div>
+
+      {/* HEADER */}
+
+      <header className="relative z-40 border-b border-[#DED5CA] bg-[#FAF7F2]/84 backdrop-blur-2xl">
+
+        <div className="mx-auto flex h-[78px] max-w-[1600px] items-center justify-between px-6 lg:px-10">
+
+          <div className="flex items-center gap-4">
+
+            <button
+              onClick={() =>
+                navigate(
+                  "/post-op-scan"
+                )
+              }
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#DDD2C5] bg-[#FFFDF9]"
+            >
+
+              <ArrowLeft className="h-4 w-4" />
+
+            </button>
+
+            <div className="flex items-center gap-3">
+
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#D4C5B3] bg-[#FFFDF9]">
+
+                <ShieldCheck className="h-5 w-5 text-[#9A724A]" />
+
+              </div>
+
+              <div>
+
+                <div className="text-sm font-semibold tracking-[0.14em]">
+                  SURGITRACK
+                </div>
+
+                <div className="text-[10px] text-[#9D9287]">
+                  FINAL RECONCILIATION
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          <div className="hidden items-center gap-3 sm:flex">
+
+            <div className="text-right">
+
+              <div className="text-sm font-medium">
+                {user.name}
+              </div>
+
+              <div className="text-[11px] text-[#968C82]">
+                {user.employeeId} · {user.role}
+              </div>
+
+            </div>
+
+            <UserRound className="h-5 w-5 text-[#9A724A]" />
+
+          </div>
+
+        </div>
+
+      </header>
+
+      {/* MAIN */}
+
+      <main className="relative z-10 mx-auto max-w-[1500px] px-5 py-9 lg:px-8">
+
+        {/* TITLE */}
+
+        <div>
+
+          <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#9A724A]">
+
+            <ShieldCheck className="h-4 w-4" />
+
+            Surgical Instrument Verification
+
+          </div>
+
+          <h1 className="text-3xl font-semibold tracking-[-0.035em] lg:text-4xl">
+
+            Final reconciliation
+
+          </h1>
+
+          <p className="mt-3 max-w-3xl text-sm leading-6 text-[#877D73]">
+
+            Review the registered RFID inventory and both visual acquisition stages before archiving this procedure.
+
+          </p>
+
+        </div>
+
+        {/* CASE */}
+
+        <div className="mt-7 flex flex-col justify-between gap-4 rounded-[22px] border border-[#DED3C6] bg-[#FFFDF9]/88 px-6 py-5 md:flex-row md:items-center">
+
+          <div>
+
+            <div className="text-sm font-semibold">
+
+              {procedure?.caseId ||
+                "No active procedure"}
+
+            </div>
+
+            <div className="mt-1 text-xs text-[#968B80]">
+
+              {procedure?.otRoom ||
+                "—"}
+
+              {procedure?.procedureName
+                ? ` · ${procedure.procedureName}`
+                : ""}
+
+            </div>
+
+          </div>
+
+          <div
+            className={`rounded-full border px-4 py-2 text-[10px] font-semibold ${
+              acquisitionComplete
+                ? "border-[#BCD0B7] bg-[#F2F8EF] text-[#698067]"
+                : "border-[#DFCFAE] bg-[#FBF5E8] text-[#94724D]"
+            }`}
+          >
+
+            {acquisitionComplete
+              ? "READY TO ARCHIVE"
+              : "RECONCILIATION PENDING"}
+
+          </div>
+
+        </div>
+
+        {/* SOURCES */}
+
+        <div className="mt-6 grid gap-4 lg:grid-cols-3">
+
+          <SourceCard
+            icon={
+              RadioTower
+            }
+            title="RFID Inventory"
+            value={`${scans.length} registered tags`}
+            ready={
+              scans.length > 0
+            }
+          />
+
+          <SourceCard
+            icon={
+              Eye
+            }
+            title="Pre-Op Vision"
+            value={
+              vision.preOpCaptured
+                ? "Captured"
+                : "Missing"
+            }
+            ready={
+              vision.preOpCaptured
+            }
+          />
+
+          <SourceCard
+            icon={
+              ScanLine
+            }
+            title="Post-Op Vision"
+            value={
+              vision.postOpCaptured
+                ? "Captured"
+                : "Missing"
+            }
+            ready={
+              vision.postOpCaptured
+            }
+          />
+
+        </div>
+
+        {/* CONTENT */}
+
+        <div className="mt-6 grid gap-6 xl:grid-cols-[1.3fr_.7fr]">
+
+          {/* INVENTORY */}
+
+          <section className="overflow-hidden rounded-[28px] border border-[#DED3C6] bg-[#FFFDF9]/90 shadow-[0_20px_55px_rgba(80,62,42,.06)]">
+
+            <div className="flex items-center justify-between border-b border-[#E8E0D7] px-6 py-5">
+
+              <div>
+
+                <h2 className="font-semibold">
+                  Procedure inventory
+                </h2>
+
+                <p className="mt-1 text-xs text-[#958B81]">
+                  RFID records for this procedure
+                </p>
+
+              </div>
+
+              <Database className="h-5 w-5 text-[#A27A53]" />
+
+            </div>
+
+            {scans.length ===
+            0 ? (
+
+              <div className="p-10 text-center text-sm text-[#968C82]">
+                No RFID records available.
+              </div>
+
+            ) : (
+
+              <div className="divide-y divide-[#ECE4DB]">
+
+                {scans.map(
+                  (scan) => (
+
+                    <div
+                      key={
+                        scan.uid
+                      }
+                      className="grid gap-4 px-6 py-5 md:grid-cols-[1.3fr_1fr_1fr]"
+                    >
+
+                      <div>
+
+                        <div className="text-[9px] uppercase tracking-wider text-[#9B9187]">
+                          RFID UID
+                        </div>
+
+                        <div className="mt-1 font-mono text-xs font-semibold">
+                          {scan.uid}
+                        </div>
+
+                      </div>
+
+                      <ResultCell
+                        label="Instrument"
+                        value={
+                          scan
+                            ?.instrument
+                            ?.name ||
+                          "DB lookup pending"
+                        }
+                      />
+
+                      <ResultCell
+                        label="Vision"
+                        value="CNN integration pending"
+                      />
+
+                    </div>
+
+                  )
+                )}
+
+              </div>
+
+            )}
+
+          </section>
+
+          {/* RIGHT */}
+
+          <div className="space-y-6">
+
+            {/* STATUS */}
+
+            <section
+              className={`rounded-[28px] border p-6 ${
+                acquisitionComplete
+                  ? "border-[#BED0B8] bg-[#F3F8F0]/94"
+                  : "border-[#E0C6BE] bg-[#FAF0ED]/94"
+              }`}
+            >
+
+              <div className="flex items-start gap-4">
+
+                <div
+                  className={`flex h-11 w-11 items-center justify-center rounded-xl ${
+                    acquisitionComplete
+                      ? "bg-[#DFECDA]"
+                      : "bg-[#F1DDD8]"
+                  }`}
+                >
+
+                  {acquisitionComplete ? (
+
+                    <CheckCircle2 className="h-5 w-5 text-[#6F896E]" />
+
+                  ) : (
+
+                    <ShieldAlert className="h-5 w-5 text-[#AD665B]" />
+
+                  )}
+
+                </div>
+
+                <div>
+
+                  <div className="text-sm font-semibold">
+
+                    {acquisitionComplete
+                      ? "Procedure data complete"
+                      : "Procedure data incomplete"}
+
+                  </div>
+
+                  <p className="mt-2 text-xs leading-5 text-[#81776D]">
+
+                    {acquisitionComplete
+                      ? "RFID, pre-op and post-op acquisition are all complete."
+                      : "Complete RFID registration, pre-op scan and post-op scan first."}
+
+                  </p>
+
+                </div>
+
+              </div>
+
+            </section>
+
+            {/* INDIVIDUAL CHECKS */}
+
+            <section className="rounded-[28px] border border-[#DDD2C5] bg-[#FFFDF9]/90 p-6">
+
+              <div className="text-[10px] font-semibold uppercase tracking-[0.13em] text-[#96704B]">
+                Acquisition Checklist
+              </div>
+
+              <div className="mt-5 space-y-3">
+
+                <CheckRow
+                  label="RFID Registration"
+                  ready={
+                    scans.length >
+                    0
+                  }
+                />
+
+                <CheckRow
+                  label="Pre-Op Vision"
+                  ready={
+                    vision.preOpCaptured
+                  }
+                />
+
+                <CheckRow
+                  label="Post-Op Vision"
+                  ready={
+                    vision.postOpCaptured
+                  }
+                />
+
+              </div>
+
+            </section>
+
+            {/* COMPLETE */}
+
+            <motion.button
+              whileHover={
+                acquisitionComplete
+                  ? {
+                      y: -3,
+                      scale: 1.01,
+                    }
+                  : {}
+              }
+              whileTap={
+                acquisitionComplete
+                  ? {
+                      scale: 0.985,
+                    }
+                  : {}
+              }
+              disabled={
+                !acquisitionComplete ||
+                completing
+              }
+              onClick={
+                completeProcedure
+              }
+              className={`flex h-14 w-full items-center justify-center rounded-2xl text-sm font-semibold ${
+                acquisitionComplete
+                  ? "bg-[#A27A53] text-white shadow-lg"
+                  : "cursor-not-allowed bg-[#E5DDD4] text-[#AAA096]"
+              }`}
+            >
+
+              {completing ? (
+
+                <span className="flex items-center gap-3">
+
+                  <LoaderCircle className="h-4 w-4 animate-spin" />
+
+                  Archiving Procedure...
+
+                </span>
+
+              ) : (
+
+                <span className="flex items-center gap-3">
+
+                  <ShieldCheck className="h-4 w-4" />
+
+                  Complete & Archive Procedure
+
+                </span>
+
+              )}
+
+            </motion.button>
+
+            <button
+              onClick={() =>
+                navigate(
+                  "/post-op-scan"
+                )
+              }
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#D7CCBF] bg-[#FFFDF9]"
+            >
+
+              <ArrowLeft className="h-4 w-4" />
+
+              Back to Post-Op Scan
+
+            </button>
+
+          </div>
+
+        </div>
+
+      </main>
+
+    </div>
+  );
+}
+
+/* =====================================================
+   COMPONENTS
+===================================================== */
+
+function SourceCard({
+  icon: Icon,
+  title,
+  value,
+  ready,
+}) {
+  return (
+    <motion.div
+      whileHover={{
+        y: -4,
+      }}
+      className="rounded-[22px] border border-[#DED3C6] bg-[#FFFDF9]/88 p-5"
+    >
+
+      <div className="flex items-center justify-between">
+
+        <div
+          className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+            ready
+              ? "bg-[#E5EFE2]"
+              : "bg-[#F2E8DC]"
+          }`}
+        >
+
+          <Icon
+            className={`h-5 w-5 ${
+              ready
+                ? "text-[#6F896E]"
+                : "text-[#A27A53]"
+            }`}
+          />
+
+        </div>
+
+        <span
+          className={`rounded-full px-3 py-1 text-[9px] font-semibold ${
+            ready
+              ? "bg-[#E7F0E4] text-[#6C856B]"
+              : "bg-[#F4EBDD] text-[#9A754F]"
+          }`}
+        >
+
+          {ready
+            ? "READY"
+            : "PENDING"}
+
+        </span>
+
+      </div>
+
+      <div className="mt-5 text-sm font-semibold">
+        {title}
+      </div>
+
+      <div className="mt-2 text-xs text-[#877D73]">
+        {value}
+      </div>
+
+    </motion.div>
+  );
+}
+
+function ResultCell({
+  label,
+  value,
+}) {
+  return (
+    <div>
+
+      <div className="text-[9px] uppercase tracking-wider text-[#9B9187]">
+        {label}
+      </div>
+
+      <div className="mt-1 text-xs text-[#746A61]">
+        {value}
+      </div>
+
+    </div>
+  );
+}
+
+function CheckRow({
+  label,
+  ready,
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-xl border border-[#E3DAD0] bg-[#FAF7F2] px-4 py-3">
+
+      <span className="text-sm">
+        {label}
+      </span>
+
+      <span
+        className={`flex items-center gap-2 text-xs font-semibold ${
+          ready
+            ? "text-[#668064]"
+            : "text-[#A27A53]"
+        }`}
+      >
+
+        {ready ? (
+          <>
+            <CheckCircle2 className="h-4 w-4" />
+            READY
+          </>
+        ) : (
+          <>
+            <Clock3 className="h-4 w-4" />
+            PENDING
+          </>
+        )}
+
+      </span>
+
+    </div>
+  );
+}
+
+============================================================
+FILE: C:\Users\Annwesh\SurgiTrack-git\frontend\src\pages\Login.jsx
+============================================================
+
+import {
+  useState,
+} from "react";
+
+import {
+  useNavigate,
+} from "react-router-dom";
+
+import {
+  motion,
+} from "framer-motion";
+
+import {
+  Activity,
+  ArrowRight,
+  BadgeCheck,
+  Eye,
+  EyeOff,
+  LoaderCircle,
+  LockKeyhole,
+  RadioTower,
+  ScanLine,
+  ShieldCheck,
+} from "lucide-react";
+
+import {
+  loginUser,
+} from "../services/api";
+
+import {
+  saveAuthToken,
+  saveCurrentUser,
+} from "../utils/demoStore";
+
+
+export default function Login() {
+  const navigate =
+    useNavigate();
+
+  const [
+    employeeId,
+    setEmployeeId,
+  ] = useState("");
+
+  const [
+    password,
+    setPassword,
+  ] = useState("");
+
+  const [
+    showPassword,
+    setShowPassword,
+  ] = useState(false);
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(false);
+
+  const [
+    error,
+    setError,
+  ] = useState("");
+
+
+  /* =====================================================
+     LOGIN
+  ===================================================== */
+
+  const handleSubmit =
+    async (
+      event
+    ) => {
+      event.preventDefault();
+
+      if (loading) {
+        return;
+      }
+
+      const cleanEmployeeId =
+        employeeId
+          .trim()
+          .toUpperCase();
+
+      if (!cleanEmployeeId) {
+        setError(
+          "Enter your Employee ID."
+        );
+
+        return;
+      }
+
+      if (!password) {
+        setError(
+          "Enter your password."
+        );
+
+        return;
+      }
+
+      setLoading(true);
+      setError("");
+
+      try {
+        /*
+         * FastAPI:
+         *
+         * POST /auth/login
+         */
+
+        const result =
+          await loginUser(
+            cleanEmployeeId,
+            password
+          );
+
+        if (
+          !result?.access_token ||
+          !result?.user
+        ) {
+          throw new Error(
+            "Invalid authentication response."
+          );
+        }
+
+        /*
+         * Save JWT.
+         */
+
+        saveAuthToken(
+          result.access_token
+        );
+
+        /*
+         * IMPORTANT:
+         *
+         * Name and role are NOT taken
+         * from the login form.
+         *
+         * They come from SQLite through
+         * FastAPI.
+         */
+
+        saveCurrentUser({
+          name:
+            result.user.name,
+
+          employeeId:
+            result.user
+              .employee_id,
+
+          role:
+            result.user.role,
+
+          email:
+            result.user.email,
+        });
+
+        navigate(
+          "/dashboard",
+          {
+            replace: true,
+          }
+        );
+      } catch (
+        loginError
+      ) {
+        console.error(
+          "Login failed:",
+          loginError
+        );
+
+        setError(
+          loginError.message ||
+            "Unable to sign in."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+
+  return (
+    <div className="relative min-h-screen overflow-x-hidden bg-[#F5F0E8] text-[#2B2925]">
+
+      {/* BACKGROUND */}
+
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+
+        <motion.div
+          initial={{
+            scale: 1.03,
+          }}
+          animate={{
+            scale: [
+              1.03,
+              1.08,
+              1.03,
+            ],
+
+            x: [
+              0,
+              -10,
+              0,
+            ],
+          }}
+          transition={{
+            duration: 18,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          className="absolute inset-0 bg-[url('/hospital-bg.jpg')] bg-cover bg-center"
+          style={{
+            opacity: 0.42,
+
+            filter:
+              "saturate(.72) contrast(.93) brightness(1.03)",
+          }}
+        />
+
+        <div className="absolute inset-0 bg-gradient-to-r from-[#F5F0E8]/94 via-[#F5F0E8]/70 to-[#F5F0E8]/32" />
+
+        <div className="absolute inset-0 bg-gradient-to-b from-[#F5F0E8]/15 via-transparent to-[#F5F0E8]/62" />
+
+        <motion.div
+          animate={{
+            x: [
+              0,
+              50,
+              -20,
+              0,
+            ],
+
+            y: [
+              0,
+              20,
+              -15,
+              0,
+            ],
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          className="absolute -left-36 -top-32 h-[30rem] w-[30rem] rounded-full bg-[#DCC7AE]/35 blur-[110px]"
+        />
+
+      </div>
+
+
+      {/* HEADER */}
+
+      <header className="relative z-20 flex min-h-[82px] items-center justify-between px-6 py-5 lg:px-14">
+
+        <motion.div
+          initial={{
+            opacity: 0,
+            x: -20,
+          }}
+          animate={{
+            opacity: 1,
+            x: 0,
+          }}
+          className="flex items-center gap-3"
+        >
+
+          <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-[#CDBA9D] bg-[#FFFDF9]/90 shadow-[0_10px_30px_rgba(91,73,49,.08)] backdrop-blur-xl">
+
+            <ScanLine className="h-5 w-5 text-[#9B744C]" />
+
+            <span className="absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full bg-[#7B9A7C]" />
+
+          </div>
+
+          <div>
+
+            <h1 className="text-base font-semibold tracking-[0.18em] sm:text-lg">
+              SURGITRACK
+            </h1>
+
+            <p className="text-[10px] text-[#8A8177] sm:text-[11px]">
+              Surgical Instrument Verification
+            </p>
+
+          </div>
+
+        </motion.div>
+
+        <div className="hidden items-center gap-2 rounded-full border border-[#B8C7B3] bg-[#F7FBF4]/85 px-4 py-2 text-[11px] font-medium text-[#637B63] backdrop-blur md:flex">
+
+          <span className="h-2 w-2 animate-pulse rounded-full bg-[#769377]" />
+
+          SECURE ACCESS
+
+        </div>
+
+      </header>
+
+
+      {/* MAIN */}
+
+      <main className="relative z-10 mx-auto grid min-h-[calc(100vh-82px)] max-w-[1450px] grid-cols-1 items-center gap-10 px-6 py-8 lg:grid-cols-[1.05fr_.95fr] lg:px-14 lg:py-10">
+
+        {/* LEFT */}
+
+        <motion.section
+          initial={{
+            opacity: 0,
+            x: -40,
+          }}
+          animate={{
+            opacity: 1,
+            x: 0,
+          }}
+          transition={{
+            duration: 0.9,
+          }}
+          className="hidden lg:block"
+        >
+
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#D8C7B2] bg-[#FFFDF9]/70 px-4 py-2 text-xs font-medium tracking-wide text-[#8B6845] backdrop-blur-xl">
+
+            <ShieldCheck className="h-4 w-4" />
+
+            OPERATING THEATRE SAFETY SYSTEM
+
+          </div>
+
+          <h2 className="max-w-3xl text-5xl font-semibold leading-[1.04] tracking-[-0.045em] text-[#302D29] xl:text-7xl">
+
+            Every instrument.
+
+            <br />
+
+            <span className="bg-gradient-to-r from-[#96704A] via-[#B38A62] to-[#778B73] bg-clip-text text-transparent">
+
+              Accounted for.
+
+            </span>
+
+          </h2>
+
+          <p className="mt-7 max-w-xl text-[17px] leading-8 text-[#756E66]">
+
+            RFID identity tracking,
+            computer vision and digital
+            surgical instrument
+            reconciliation.
+
+          </p>
+
+          <div className="mt-10 grid max-w-2xl grid-cols-3 gap-4">
+
+            <SystemTile
+              icon={
+                RadioTower
+              }
+              title="RFID"
+              text="Identity tracking"
+            />
+
+            <SystemTile
+              icon={
+                Activity
+              }
+              title="Vision"
+              text="Tray verification"
+            />
+
+            <SystemTile
+              icon={
+                ShieldCheck
+              }
+              title="Reconcile"
+              text="Final status"
+            />
+
+          </div>
+
+        </motion.section>
+
+
+        {/* LOGIN CARD */}
+
+        <motion.section
+          initial={{
+            opacity: 0,
+            y: 30,
+            scale: 0.98,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+            scale: 1,
+          }}
+          transition={{
+            duration: 0.7,
+          }}
+          className="mx-auto w-full max-w-[510px]"
+        >
+
+          <div className="relative overflow-hidden rounded-[32px] border border-[#D7CCBE] bg-[#FFFDF9]/90 shadow-[0_28px_90px_rgba(88,68,46,.14)] backdrop-blur-2xl">
+
+            <motion.div
+              animate={{
+                opacity: [
+                  0.3,
+                  0.8,
+                  0.3,
+                ],
+              }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+              }}
+              className="absolute left-1/2 top-0 h-px w-2/3 -translate-x-1/2 bg-gradient-to-r from-transparent via-[#B68A5A] to-transparent"
+            />
+
+
+            <div className="p-7 sm:p-9">
+
+              {/* LOGIN HEADER */}
+
+              <div className="mb-8">
+
+                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-[#D8C9B7] bg-[#F5EEE6]">
+
+                  <LockKeyhole className="h-5 w-5 text-[#956E46]" />
+
+                </div>
+
+                <p className="mb-2 text-[11px] font-semibold tracking-[0.19em] text-[#9B744C]">
+
+                  AUTHORIZED PERSONNEL
+
+                </p>
+
+                <h3 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+
+                  Sign in
+
+                </h3>
+
+                <p className="mt-2 text-sm leading-6 text-[#8A8177]">
+
+                  Use your registered hospital Employee ID to access SurgiTrack.
+
+                </p>
+
+              </div>
+
+
+              {/* FORM */}
+
+              <form
+                onSubmit={
+                  handleSubmit
+                }
+                className="space-y-5"
+              >
+
+                {/* EMPLOYEE ID */}
+
+                <div>
+
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.13em] text-[#8D8379]">
+
+                    Employee ID
+
+                  </label>
+
+                  <div className="flex h-14 items-center gap-3 rounded-2xl border border-[#DED4C8] bg-[#F9F5EF]/90 px-4 transition focus-within:border-[#B78D62] focus-within:bg-[#FFFDF9]">
+
+                    <BadgeCheck className="h-4 w-4 shrink-0 text-[#A1978B]" />
+
+                    <input
+                      autoComplete="username"
+                      value={
+                        employeeId
+                      }
+                      onChange={(
+                        event
+                      ) => {
+                        setEmployeeId(
+                          event.target.value
+                        );
+
+                        if (error) {
+                          setError("");
+                        }
+                      }}
+                      disabled={
+                        loading
+                      }
+                      placeholder="Enter employee ID"
+                      className="h-full min-w-0 flex-1 bg-transparent text-sm uppercase outline-none placeholder:normal-case placeholder:text-[#B4AAA0]"
+                    />
+
+                  </div>
+
+                </div>
+
+
+                {/* PASSWORD */}
+
+                <div>
+
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.13em] text-[#8D8379]">
+
+                    Password
+
+                  </label>
+
+                  <div className="flex h-14 items-center gap-3 rounded-2xl border border-[#DED4C8] bg-[#F9F5EF]/90 px-4 transition focus-within:border-[#B78D62] focus-within:bg-[#FFFDF9]">
+
+                    <LockKeyhole className="h-4 w-4 shrink-0 text-[#A1978B]" />
+
+                    <input
+                      autoComplete="current-password"
+                      type={
+                        showPassword
+                          ? "text"
+                          : "password"
+                      }
+                      value={
+                        password
+                      }
+                      onChange={(
+                        event
+                      ) => {
+                        setPassword(
+                          event.target.value
+                        );
+
+                        if (error) {
+                          setError("");
+                        }
+                      }}
+                      disabled={
+                        loading
+                      }
+                      placeholder="Enter password"
+                      className="h-full min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#B4AAA0]"
+                    />
+
+                    <button
+                      type="button"
+                      disabled={
+                        loading
+                      }
+                      onClick={() =>
+                        setShowPassword(
+                          (
+                            current
+                          ) =>
+                            !current
+                        )
+                      }
+                      className="shrink-0 text-[#9A9188] transition hover:text-[#655D56]"
+                    >
+
+                      {showPassword ? (
+
+                        <EyeOff className="h-4 w-4" />
+
+                      ) : (
+
+                        <Eye className="h-4 w-4" />
+
+                      )}
+
+                    </button>
+
+                  </div>
+
+                </div>
+
+
+                {/* ERROR */}
+
+                {error && (
+
+                  <motion.div
+                    initial={{
+                      opacity: 0,
+                      y: -5,
+                    }}
+                    animate={{
+                      opacity: 1,
+                      y: 0,
+                    }}
+                    className="rounded-xl border border-[#E3C6BF] bg-[#FBF0ED] px-4 py-3 text-xs leading-5 text-[#A15E54]"
+                  >
+
+                    {error}
+
+                  </motion.div>
+
+                )}
+
+
+                {/* LOGIN BUTTON */}
+
+                <motion.button
+                  whileHover={
+                    !loading
+                      ? {
+                          y: -2,
+                          scale: 1.01,
+                        }
+                      : {}
+                  }
+                  whileTap={
+                    !loading
+                      ? {
+                          scale: 0.985,
+                        }
+                      : {}
+                  }
+                  disabled={
+                    loading
+                  }
+                  type="submit"
+                  className={`button-sheen relative flex h-14 w-full items-center justify-center overflow-hidden rounded-2xl text-sm font-semibold text-white shadow-[0_14px_35px_rgba(137,98,61,.22)] ${
+                    loading
+                      ? "cursor-wait bg-[#AF957B]"
+                      : "bg-[#A47B52]"
+                  }`}
+                >
+
+                  <span className="relative z-10 flex items-center gap-3">
+
+                    {loading ? (
+                      <>
+                        <LoaderCircle className="h-4 w-4 animate-spin" />
+
+                        Verifying Credentials...
+                      </>
+                    ) : (
+                      <>
+                        Access SurgiTrack
+
+                        <ArrowRight className="h-4 w-4" />
+                      </>
+                    )}
+
+                  </span>
+
+                </motion.button>
+
+              </form>
+
+
+              {/* FOOTER */}
+
+              <div className="mt-7 border-t border-[#E8DFD5] pt-5">
+
+                <div className="flex items-center gap-2 text-[10px] leading-5 tracking-wide text-[#A69C91]">
+
+                  <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+
+                  Profile name and hospital role are verified from the registered employee account.
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+        </motion.section>
+
+      </main>
+
+    </div>
+  );
+}
+
+
+/* =========================================================
+   FEATURE TILE
+========================================================= */
+
+function SystemTile({
+  icon: Icon,
+  title,
+  text,
+}) {
+  return (
+    <motion.div
+      whileHover={{
+        y: -7,
+      }}
+      className="rounded-[20px] border border-[#DCD1C4] bg-[#FFFDF9]/65 p-4 backdrop-blur-xl"
+    >
+
+      <div className="mb-5 flex h-9 w-9 items-center justify-center rounded-xl bg-[#F1E9DE]">
+
+        <Icon className="h-4 w-4 text-[#9A724A]" />
+
+      </div>
+
+      <div className="text-sm font-semibold">
+        {title}
+      </div>
+
+      <div className="mt-1 text-xs text-[#8A8177]">
+        {text}
+      </div>
+
+    </motion.div>
+  );
+}
+
+============================================================
+FILE: C:\Users\Annwesh\SurgiTrack-git\frontend\src\pages\NewProcedure.jsx
+============================================================
+
+import {
+  useState,
+} from "react";
+
+import {
+  motion,
+} from "framer-motion";
+
+import {
+  useNavigate,
+} from "react-router-dom";
+
+import {
+  ArrowLeft,
+  ArrowRight,
+  ClipboardPlus,
+  DoorOpen,
+  Hash,
+  ScanLine,
+  Stethoscope,
+  UserRound,
+} from "lucide-react";
+
+import {
+  clearActiveProcedureState,
+  getCurrentUser,
+  saveCurrentProcedure,
+} from "../utils/demoStore";
+
+export default function NewProcedure() {
+  const navigate =
+    useNavigate();
+
+  const user =
+    getCurrentUser();
+
+  const [
+    form,
+    setForm,
+  ] = useState({
+    caseId: "",
+    procedureName: "",
+    otRoom: "OT 01",
+    surgeon: "",
+  });
+
+  const [
+    error,
+    setError,
+  ] = useState("");
+
+  const update = (
+    field,
+    value
+  ) => {
+    setForm(
+      (
+        current
+      ) => ({
+        ...current,
+        [field]: value,
+      })
+    );
+  };
+
+  const handleSubmit = (
+    event
+  ) => {
+    event.preventDefault();
+
+    if (
+      !form.caseId.trim()
+    ) {
+      setError(
+        "Enter the Case ID."
+      );
+
+      return;
+    }
+
+    if (
+      !form.procedureName.trim()
+    ) {
+      setError(
+        "Enter the procedure name."
+      );
+
+      return;
+    }
+
+    if (
+      !form.surgeon.trim()
+    ) {
+      setError(
+        "Enter the lead surgeon."
+      );
+
+      return;
+    }
+
+    setError("");
+
+    /*
+     * New procedure =
+     * clean active workflow.
+     *
+     * History is NOT affected.
+     */
+
+    clearActiveProcedureState();
+
+    saveCurrentProcedure({
+      caseId:
+        form.caseId.trim(),
+
+      procedureName:
+        form.procedureName.trim(),
+
+      otRoom:
+        form.otRoom,
+
+      surgeon:
+        form.surgeon.trim(),
+
+      createdAt:
+        new Date().toISOString(),
+
+      status:
+        "rfid-registration",
+    });
+
+    navigate(
+      "/rfid-registration"
+    );
+  };
+
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-[#F5F0E8] text-[#2D2A26]">
+
+      <div className="pointer-events-none fixed inset-0">
+
+        <div
+          className="absolute inset-0 bg-[url('/doctors-bg.jpg')] bg-cover bg-center"
+          style={{
+            opacity: 0.18,
+          }}
+        />
+
+        <div className="absolute inset-0 bg-gradient-to-r from-[#F5F0E8]/98 via-[#F5F0E8]/90 to-[#F5F0E8]/60" />
+
+      </div>
+
+      {/* HEADER */}
+
+      <header className="relative z-30 border-b border-[#DED5CA] bg-[#FAF7F2]/82 backdrop-blur-2xl">
+
+        <div className="mx-auto flex h-[78px] max-w-[1500px] items-center justify-between px-6 lg:px-10">
+
+          <div className="flex items-center gap-4">
+
+            <button
+              onClick={() =>
+                navigate(
+                  "/dashboard"
+                )
+              }
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#DDD2C5] bg-[#FFFDF9]"
+            >
+
+              <ArrowLeft className="h-4 w-4" />
+
+            </button>
+
+            <div className="flex items-center gap-3">
+
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#D4C5B3] bg-[#FFFDF9]">
+
+                <ScanLine className="h-5 w-5 text-[#9A724A]" />
+
+              </div>
+
+              <div>
+
+                <div className="text-sm font-semibold tracking-[0.14em]">
+                  SURGITRACK
+                </div>
+
+                <div className="text-[10px] text-[#9D9287]">
+                  NEW PROCEDURE
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          <div className="hidden text-right sm:block">
+
+            <div className="text-sm font-medium">
+              {user.name}
+            </div>
+
+            <div className="text-[11px] text-[#968C82]">
+              {user.role}
+            </div>
+
+          </div>
+
+        </div>
+
+      </header>
+
+      {/* MAIN */}
+
+      <main className="relative z-10 mx-auto max-w-[1100px] px-6 py-12">
+
+        <div className="mb-9">
+
+          <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#9A724A]">
+
+            <ClipboardPlus className="h-4 w-4" />
+
+            Procedure Setup
+
+          </div>
+
+          <h1 className="text-4xl font-semibold tracking-[-0.035em]">
+            Start a new procedure
+          </h1>
+
+          <p className="mt-3 text-sm text-[#877D73]">
+            Create a fresh surgical procedure session.
+          </p>
+
+        </div>
+
+        <motion.form
+          onSubmit={
+            handleSubmit
+          }
+          initial={{
+            opacity: 0,
+            y: 20,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          className="rounded-[28px] border border-[#DDD2C5] bg-[#FFFDF9]/90 p-8 shadow-[0_20px_55px_rgba(80,62,42,.07)] backdrop-blur-xl"
+        >
+
+          <div className="grid gap-6 md:grid-cols-2">
+
+            <InputField
+              label="Case ID"
+              icon={Hash}
+              placeholder="Enter case ID"
+              value={
+                form.caseId
+              }
+              onChange={(
+                event
+              ) =>
+                update(
+                  "caseId",
+                  event.target
+                    .value
+                )
+              }
+            />
+
+            <SelectField
+              label="Operating Theatre"
+              icon={
+                DoorOpen
+              }
+              value={
+                form.otRoom
+              }
+              onChange={(
+                event
+              ) =>
+                update(
+                  "otRoom",
+                  event.target
+                    .value
+                )
+              }
+            >
+
+              <option>
+                OT 01
+              </option>
+
+              <option>
+                OT 02
+              </option>
+
+              <option>
+                OT 03
+              </option>
+
+              <option>
+                OT 04
+              </option>
+
+              <option>
+                OT 05
+              </option>
+
+            </SelectField>
+
+            <div className="md:col-span-2">
+
+              <InputField
+                label="Procedure"
+                icon={
+                  Stethoscope
+                }
+                placeholder="Enter procedure"
+                value={
+                  form.procedureName
+                }
+                onChange={(
+                  event
+                ) =>
+                  update(
+                    "procedureName",
+                    event.target
+                      .value
+                  )
+                }
+              />
+
+            </div>
+
+            <div className="md:col-span-2">
+
+              <InputField
+                label="Lead Surgeon"
+                icon={
+                  UserRound
+                }
+                placeholder="Enter surgeon name"
+                value={
+                  form.surgeon
+                }
+                onChange={(
+                  event
+                ) =>
+                  update(
+                    "surgeon",
+                    event.target
+                      .value
+                  )
+                }
+              />
+
+            </div>
+
+          </div>
+
+          {error && (
+
+            <div className="mt-6 rounded-xl border border-[#E3C6BF] bg-[#FBF0ED] px-4 py-3 text-xs text-[#A15E54]">
+
+              {error}
+
+            </div>
+
+          )}
+
+          <div className="mt-7 rounded-2xl border border-[#DDD2C5] bg-[#F8F3EC] p-4">
+
+            <div className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#9D9185]">
+              Attending Personnel
+            </div>
+
+            <div className="mt-2 text-sm font-medium">
+              {user.name}
+            </div>
+
+            <div className="mt-1 text-xs text-[#968B81]">
+              {user.employeeId} · {user.role}
+            </div>
+
+          </div>
+
+          <div className="mt-8 flex items-center justify-between border-t border-[#E9E1D8] pt-6">
+
+            <button
+              type="button"
+              onClick={() =>
+                navigate(
+                  "/dashboard"
+                )
+              }
+              className="rounded-xl px-5 py-3 text-sm text-[#877A6F]"
+            >
+              Cancel
+            </button>
+
+            <motion.button
+              whileHover={{
+                y: -2,
+              }}
+              type="submit"
+              className="button-sheen relative flex h-12 items-center overflow-hidden rounded-xl bg-[#A27A53] px-6 text-sm font-semibold text-white"
+            >
+
+              <span className="relative z-10 flex items-center gap-3">
+
+                Continue to RFID
+
+                <ArrowRight className="h-4 w-4" />
+
+              </span>
+
+            </motion.button>
+
+          </div>
+
+        </motion.form>
+
+      </main>
+
+    </div>
+  );
+}
+
+function InputField({
+  label,
+  icon: Icon,
+  ...props
+}) {
+  return (
+    <div>
+
+      <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.13em] text-[#8E8378]">
+        {label}
+      </label>
+
+      <div className="flex h-14 items-center gap-3 rounded-2xl border border-[#DDD3C7] bg-[#FAF6F0] px-4">
+
+        <Icon className="h-4 w-4 text-[#A1978C]" />
+
+        <input
+          {...props}
+          className="h-full w-full bg-transparent text-sm outline-none"
+        />
+
+      </div>
+
+    </div>
+  );
+}
+
+function SelectField({
+  label,
+  icon: Icon,
+  children,
+  ...props
+}) {
+  return (
+    <div>
+
+      <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.13em] text-[#8E8378]">
+        {label}
+      </label>
+
+      <div className="flex h-14 items-center gap-3 rounded-2xl border border-[#DDD3C7] bg-[#FAF6F0] px-4">
+
+        <Icon className="h-4 w-4 text-[#A1978C]" />
+
+        <select
+          {...props}
+          className="h-full w-full bg-transparent text-sm outline-none"
+        >
+          {children}
+        </select>
+
+      </div>
+
+    </div>
+  );
+}
+
+============================================================
+FILE: C:\Users\Annwesh\SurgiTrack-git\frontend\src\pages\PostOpScan.jsx
+============================================================
+
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
+import {
+  AnimatePresence,
+  motion,
+} from "framer-motion";
+
+import {
+  useNavigate,
+} from "react-router-dom";
+
+import {
+  ArrowLeft,
+  ArrowRight,
+  Camera,
+  CameraOff,
+  CheckCircle2,
+  Eye,
+  LoaderCircle,
+  RadioTower,
+  RefreshCw,
+  ScanLine,
+  ShieldCheck,
+  UserRound,
+  Video,
+} from "lucide-react";
+
+import {
+  getCurrentProcedure,
+  getCurrentUser,
+  getRfidScans,
+  setPostOpCaptured,
+} from "../utils/demoStore";
+
+export default function PostOpScan() {
+  const navigate =
+    useNavigate();
+
+  const videoRef =
+    useRef(null);
+
+  const canvasRef =
+    useRef(null);
+
+  const streamRef =
+    useRef(null);
+
+  const timerRef =
+    useRef(null);
+
+  const user =
+    getCurrentUser();
+
+  const procedure =
+    getCurrentProcedure();
+
+  const scans =
+    getRfidScans();
+
+  const [
+    cameraActive,
+    setCameraActive,
+  ] = useState(false);
+
+  const [
+    cameraLoading,
+    setCameraLoading,
+  ] = useState(false);
+
+  const [
+    cameraError,
+    setCameraError,
+  ] = useState("");
+
+  const [
+    scanStatus,
+    setScanStatus,
+  ] = useState("idle");
+
+  const [
+    capturedImage,
+    setCapturedImage,
+  ] = useState(null);
+
+  /* =====================================================
+     CLEANUP
+  ===================================================== */
+
+  useEffect(() => {
+    return () => {
+      if (
+        timerRef.current
+      ) {
+        clearTimeout(
+          timerRef.current
+        );
+      }
+
+      if (
+        streamRef.current
+      ) {
+        streamRef.current
+          .getTracks()
+          .forEach(
+            (track) =>
+              track.stop()
+          );
+      }
+    };
+  }, []);
+
+  /* =====================================================
+     START CAMERA
+  ===================================================== */
+
+  const startCamera =
+    async () => {
+      setCameraLoading(
+        true
+      );
+
+      setCameraError("");
+
+      setCapturedImage(
+        null
+      );
+
+      setScanStatus(
+        "idle"
+      );
+
+      setPostOpCaptured(
+        false
+      );
+
+      try {
+        if (
+          streamRef.current
+        ) {
+          streamRef.current
+            .getTracks()
+            .forEach(
+              (track) =>
+                track.stop()
+            );
+
+          streamRef.current =
+            null;
+        }
+
+        if (
+          !navigator
+            .mediaDevices
+            ?.getUserMedia
+        ) {
+          throw new Error(
+            "Camera access requires localhost or HTTPS."
+          );
+        }
+
+        let stream;
+
+        try {
+          stream =
+            await navigator.mediaDevices.getUserMedia(
+              {
+                video: {
+                  facingMode: {
+                    ideal:
+                      "environment",
+                  },
+
+                  width: {
+                    ideal: 1920,
+                  },
+
+                  height: {
+                    ideal: 1080,
+                  },
+                },
+
+                audio: false,
+              }
+            );
+        } catch {
+          stream =
+            await navigator.mediaDevices.getUserMedia(
+              {
+                video: true,
+                audio: false,
+              }
+            );
+        }
+
+        streamRef.current =
+          stream;
+
+        if (
+          videoRef.current
+        ) {
+          videoRef.current.srcObject =
+            stream;
+
+          await videoRef.current.play();
+        }
+
+        setCameraActive(
+          true
+        );
+      } catch (
+        error
+      ) {
+        console.error(
+          "Camera error:",
+          error
+        );
+
+        setCameraActive(
+          false
+        );
+
+        setCameraError(
+          "Unable to access the camera. Allow camera permission and try again."
+        );
+      } finally {
+        setCameraLoading(
+          false
+        );
+      }
+    };
+
+  /* =====================================================
+     STOP CAMERA
+  ===================================================== */
+
+  const stopCamera =
+    () => {
+      if (
+        streamRef.current
+      ) {
+        streamRef.current
+          .getTracks()
+          .forEach(
+            (track) =>
+              track.stop()
+          );
+
+        streamRef.current =
+          null;
+      }
+
+      if (
+        videoRef.current
+      ) {
+        videoRef.current.srcObject =
+          null;
+      }
+
+      setCameraActive(
+        false
+      );
+    };
+
+  /* =====================================================
+     CAPTURE FRAME
+  ===================================================== */
+
+  const captureFrame =
+    () => {
+      const video =
+        videoRef.current;
+
+      const canvas =
+        canvasRef.current;
+
+      if (
+        !video ||
+        !canvas ||
+        !video.videoWidth ||
+        !video.videoHeight
+      ) {
+        return null;
+      }
+
+      canvas.width =
+        video.videoWidth;
+
+      canvas.height =
+        video.videoHeight;
+
+      const context =
+        canvas.getContext(
+          "2d"
+        );
+
+      context.drawImage(
+        video,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+      return canvas.toDataURL(
+        "image/jpeg",
+        0.92
+      );
+    };
+
+  /* =====================================================
+     POST-OP SCAN
+  ===================================================== */
+
+  const scanTray = () => {
+    if (
+      !cameraActive
+    ) {
+      return;
+    }
+
+    const frame =
+      captureFrame();
+
+    if (!frame) {
+      setCameraError(
+        "Camera is still starting. Wait a moment and scan again."
+      );
+
+      return;
+    }
+
+    setCameraError("");
+
+    setScanStatus(
+      "scanning"
+    );
+
+    setPostOpCaptured(
+      false
+    );
+
+    if (
+      timerRef.current
+    ) {
+      clearTimeout(
+        timerRef.current
+      );
+    }
+
+    timerRef.current =
+      setTimeout(() => {
+        setCapturedImage(
+          frame
+        );
+
+        /*
+         * IMPORTANT
+         *
+         * This makes the Post-Op
+         * card READY on Final
+         * Reconciliation.
+         */
+
+        setPostOpCaptured(
+          true
+        );
+
+        setScanStatus(
+          "complete"
+        );
+      }, 2000);
+  };
+
+  /* =====================================================
+     RESCAN
+  ===================================================== */
+
+  const rescanTray =
+    () => {
+      setPostOpCaptured(
+        false
+      );
+
+      setCapturedImage(
+        null
+      );
+
+      setScanStatus(
+        "idle"
+      );
+
+      setCameraError("");
+    };
+
+  /* =====================================================
+     NAVIGATION
+  ===================================================== */
+
+  const goBack = () => {
+    stopCamera();
+
+    navigate(
+      "/procedure-active"
+    );
+  };
+
+  const continueToReconciliation =
+    () => {
+      if (
+        scanStatus !==
+        "complete"
+      ) {
+        return;
+      }
+
+      stopCamera();
+
+      navigate(
+        "/final-reconciliation"
+      );
+    };
+
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-[#F5F0E8] text-[#2D2A26]">
+
+      {/* BACKGROUND */}
+
+      <div className="pointer-events-none fixed inset-0">
+
+        <motion.div
+          animate={{
+            scale: [
+              1.03,
+              1.07,
+              1.03,
+            ],
+          }}
+          transition={{
+            duration: 24,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          className="absolute inset-0 bg-[url('/doctors-bg.jpg')] bg-cover bg-center"
+          style={{
+            opacity: 0.15,
+          }}
+        />
+
+        <div className="absolute inset-0 bg-gradient-to-r from-[#F5F0E8]/98 via-[#F5F0E8]/91 to-[#F5F0E8]/61" />
+
+      </div>
+
+      {/* HEADER */}
+
+      <header className="relative z-40 border-b border-[#DED5CA] bg-[#FAF7F2]/82 backdrop-blur-2xl">
+
+        <div className="mx-auto flex h-[78px] max-w-[1600px] items-center justify-between px-6 lg:px-10">
+
+          <div className="flex items-center gap-4">
+
+            <button
+              onClick={goBack}
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#DDD2C5] bg-[#FFFDF9]"
+            >
+
+              <ArrowLeft className="h-4 w-4" />
+
+            </button>
+
+            <div className="flex items-center gap-3">
+
+              <Camera className="h-5 w-5 text-[#9A724A]" />
+
+              <div>
+
+                <div className="text-sm font-semibold tracking-[0.14em]">
+                  SURGITRACK
+                </div>
+
+                <div className="text-[10px] text-[#9D9287]">
+                  POST-OPERATIVE VISION
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          <div className="hidden items-center gap-3 sm:flex">
+
+            <div className="text-right">
+
+              <div className="text-sm font-medium">
+                {user.name}
+              </div>
+
+              <div className="text-[11px] text-[#968C82]">
+                {user.employeeId} · {user.role}
+              </div>
+
+            </div>
+
+            <UserRound className="h-5 w-5 text-[#9A724A]" />
+
+          </div>
+
+        </div>
+
+      </header>
+
+      {/* MAIN */}
+
+      <main className="relative z-10 mx-auto max-w-[1500px] px-5 py-9 lg:px-8">
+
+        <div className="mb-7">
+
+          <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#9A724A]">
+
+            <Eye className="h-4 w-4" />
+
+            Post-Operative Verification
+
+          </div>
+
+          <h1 className="text-3xl font-semibold lg:text-4xl">
+
+            Scan returned instrument tray
+
+          </h1>
+
+          <p className="mt-3 text-sm text-[#877D73]">
+
+            Position all returned instruments inside the live camera frame.
+
+          </p>
+
+        </div>
+
+        {/* STATUS */}
+
+        <div className="mb-6 flex flex-wrap gap-3">
+
+          <StatusBox
+            icon={RadioTower}
+            label={`${scans.length} RFID tags`}
+          />
+
+          <StatusBox
+            icon={
+              cameraActive
+                ? Video
+                : CameraOff
+            }
+            label={
+              cameraActive
+                ? "Camera Live"
+                : "Camera Offline"
+            }
+          />
+
+          <StatusBox
+            icon={ShieldCheck}
+            label={
+              procedure?.caseId ||
+              "No active case"
+            }
+          />
+
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-[1.35fr_.65fr]">
+
+          {/* CAMERA */}
+
+          <section className="overflow-hidden rounded-[28px] border border-[#D9CDBF] bg-[#FFFDF9]/88">
+
+            <div className="flex items-center justify-between border-b border-[#E8E0D7] px-6 py-5">
+
+              <div>
+
+                <h2 className="font-semibold">
+                  Live post-op camera
+                </h2>
+
+                <p className="mt-1 text-xs text-[#958B81]">
+                  Returned tray acquisition
+                </p>
+
+              </div>
+
+              <div
+                className={`rounded-full border px-3 py-1.5 text-[10px] font-semibold ${
+                  cameraActive
+                    ? "border-[#C7D2C1] bg-[#F4F8F1] text-[#698067]"
+                    : "border-[#DDD3C7] bg-[#F6F1EB] text-[#998E84]"
+                }`}
+              >
+
+                {cameraActive
+                  ? "LIVE"
+                  : "OFFLINE"}
+
+              </div>
+
+            </div>
+
+            <div className="p-6">
+
+              <div className="relative min-h-[540px] overflow-hidden rounded-[26px] bg-[#292622]">
+
+                <video
+                  ref={
+                    videoRef
+                  }
+                  autoPlay
+                  muted
+                  playsInline
+                  className={`absolute inset-0 h-full w-full object-cover ${
+                    cameraActive &&
+                    !capturedImage
+                      ? "opacity-100"
+                      : "opacity-0"
+                  }`}
+                />
+
+                {capturedImage && (
+
+                  <img
+                    src={
+                      capturedImage
+                    }
+                    alt="Post-op tray"
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
+
+                )}
+
+                <canvas
+                  ref={
+                    canvasRef
+                  }
+                  className="hidden"
+                />
+
+                {!cameraActive &&
+                  !cameraLoading && (
+
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+
+                    <Camera className="h-10 w-10 text-[#D8BA98]" />
+
+                    <div className="mt-5 text-lg font-semibold text-white">
+                      Start live camera
+                    </div>
+
+                    <button
+                      onClick={
+                        startCamera
+                      }
+                      className="mt-6 rounded-xl bg-[#B88A5B] px-6 py-3 text-sm font-semibold text-white"
+                    >
+                      Start Camera
+                    </button>
+
+                  </div>
+
+                )}
+
+                {cameraLoading && (
+
+                  <div className="absolute inset-0 flex items-center justify-center">
+
+                    <LoaderCircle className="h-8 w-8 animate-spin text-[#D7B58F]" />
+
+                  </div>
+
+                )}
+
+                <AnimatePresence>
+
+                  {scanStatus ===
+                    "scanning" && (
+
+                    <motion.div
+                      initial={{
+                        opacity: 0,
+                      }}
+                      animate={{
+                        opacity: 1,
+                      }}
+                      exit={{
+                        opacity: 0,
+                      }}
+                      className="absolute inset-0 bg-black/25"
+                    >
+
+                      <motion.div
+                        initial={{
+                          top: "8%",
+                        }}
+                        animate={{
+                          top: "90%",
+                        }}
+                        transition={{
+                          duration: 1.8,
+                        }}
+                        className="absolute left-[5%] right-[5%] h-[2px] bg-[#EAC59E]"
+                      />
+
+                      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-black/65 px-8 py-6 text-center text-white">
+
+                        <LoaderCircle className="mx-auto h-6 w-6 animate-spin" />
+
+                        <div className="mt-3 text-sm font-semibold">
+                          Scanning post-op tray
+                        </div>
+
+                      </div>
+
+                    </motion.div>
+
+                  )}
+
+                </AnimatePresence>
+
+                {scanStatus ===
+                  "complete" && (
+
+                  <div className="absolute right-5 top-5 flex items-center gap-2 rounded-full bg-[#F4FAF1] px-4 py-2 text-[10px] font-semibold text-[#668064]">
+
+                    <CheckCircle2 className="h-4 w-4" />
+
+                    POST-OP READY
+
+                  </div>
+
+                )}
+
+              </div>
+
+              {cameraError && (
+
+                <div className="mt-4 rounded-xl bg-[#FBF0ED] px-4 py-3 text-xs text-[#A15E54]">
+
+                  {cameraError}
+
+                </div>
+
+              )}
+
+              <div className="mt-5">
+
+                {scanStatus ===
+                "complete" ? (
+
+                  <button
+                    onClick={
+                      rescanTray
+                    }
+                    className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#D2C4B5] bg-[#F7F1EA] text-sm font-semibold"
+                  >
+
+                    <RefreshCw className="h-4 w-4" />
+
+                    Rescan Tray
+
+                  </button>
+
+                ) : (
+
+                  <button
+                    onClick={
+                      scanTray
+                    }
+                    disabled={
+                      !cameraActive ||
+                      scanStatus ===
+                        "scanning"
+                    }
+                    className={`flex h-12 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold ${
+                      cameraActive &&
+                      scanStatus !==
+                        "scanning"
+                        ? "bg-[#A27A53] text-white"
+                        : "cursor-not-allowed bg-[#E5DDD4] text-[#AAA096]"
+                    }`}
+                  >
+
+                    <ScanLine className="h-4 w-4" />
+
+                    {scanStatus ===
+                    "scanning"
+                      ? "Scanning..."
+                      : "Scan Post-Op Tray"}
+
+                  </button>
+
+                )}
+
+              </div>
+
+            </div>
+
+          </section>
+
+          {/* RIGHT */}
+
+          <div className="space-y-6">
+
+            <section className="rounded-[28px] border border-[#DED3C6] bg-[#FFFDF9]/88 p-6">
+
+              <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#98704A]">
+                Post-Op Status
+              </div>
+
+              {scanStatus ===
+              "complete" ? (
+
+                <div className="mt-6 rounded-2xl border border-[#C4D4BE] bg-[#F2F8EF] p-5">
+
+                  <CheckCircle2 className="h-6 w-6 text-[#70896E]" />
+
+                  <div className="mt-3 text-sm font-semibold">
+                    Returned tray captured
+                  </div>
+
+                  <div className="mt-2 text-xs text-[#788876]">
+                    Post-operative acquisition is complete.
+                  </div>
+
+                </div>
+
+              ) : (
+
+                <div className="mt-6 rounded-2xl border border-dashed border-[#DDD2C5] p-6 text-center text-sm">
+                  Awaiting post-op tray scan
+                </div>
+
+              )}
+
+            </section>
+
+            <button
+              onClick={
+                continueToReconciliation
+              }
+              disabled={
+                scanStatus !==
+                "complete"
+              }
+              className={`flex h-14 w-full items-center justify-center gap-3 rounded-2xl text-sm font-semibold ${
+                scanStatus ===
+                "complete"
+                  ? "bg-[#A27A53] text-white"
+                  : "cursor-not-allowed bg-[#E6DED5] text-[#AAA096]"
+              }`}
+            >
+
+              Continue to Reconciliation
+
+              <ArrowRight className="h-4 w-4" />
+
+            </button>
+
+            <button
+              onClick={
+                goBack
+              }
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#D7CCBF] bg-[#FFFDF9]"
+            >
+
+              <ArrowLeft className="h-4 w-4" />
+
+              Back to Procedure
+
+            </button>
+
+          </div>
+
+        </div>
+
+      </main>
+
+    </div>
+  );
+}
+
+function StatusBox({
+  icon: Icon,
+  label,
+}) {
+  return (
+    <div className="flex items-center gap-2 rounded-xl border border-[#DED4C8] bg-[#FFFDF9]/82 px-4 py-2 text-xs">
+
+      <Icon className="h-4 w-4 text-[#9A724A]" />
+
+      {label}
+
+    </div>
+  );
+}
+
+============================================================
+FILE: C:\Users\Annwesh\SurgiTrack-git\frontend\src\pages\PreOpScan.jsx
+============================================================
+
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
+import {
+  AnimatePresence,
+  motion,
+} from "framer-motion";
+
+import {
+  useNavigate,
+} from "react-router-dom";
+
+import {
+  ArrowLeft,
+  ArrowRight,
+  Camera,
+  CameraOff,
+  CheckCircle2,
+  Eye,
+  LoaderCircle,
+  RadioTower,
+  RefreshCw,
+  ScanLine,
+  ShieldCheck,
+  UserRound,
+  Video,
+} from "lucide-react";
+
+import {
+  getCurrentProcedure,
+  getCurrentUser,
+  getRfidScans,
+  setPreOpCaptured,
+} from "../utils/demoStore";
+
+export default function PreOpScan() {
+  const navigate = useNavigate();
+
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const streamRef = useRef(null);
+  const timerRef = useRef(null);
+
+  const user = getCurrentUser();
+  const procedure = getCurrentProcedure();
+  const scans = getRfidScans();
+
+  const [
+    cameraActive,
+    setCameraActive,
+  ] = useState(false);
+
+  const [
+    cameraLoading,
+    setCameraLoading,
+  ] = useState(false);
+
+  const [
+    cameraError,
+    setCameraError,
+  ] = useState("");
+
+  const [
+    scanStatus,
+    setScanStatus,
+  ] = useState("idle");
+
+  const [
+    capturedImage,
+    setCapturedImage,
+  ] = useState(null);
+
+  /* =====================================================
+     CLEANUP
+  ===================================================== */
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(
+          timerRef.current
+        );
+      }
+
+      if (streamRef.current) {
+        streamRef.current
+          .getTracks()
+          .forEach((track) =>
+            track.stop()
+          );
+      }
+    };
+  }, []);
+
+  /* =====================================================
+     START CAMERA
+  ===================================================== */
+
+  const startCamera = async () => {
+    setCameraLoading(true);
+    setCameraError("");
+
+    setCapturedImage(null);
+    setScanStatus("idle");
+
+    /*
+     * Starting/restarting the camera means
+     * this scan is not complete yet.
+     */
+
+    setPreOpCaptured(false);
+
+    try {
+      if (
+        streamRef.current
+      ) {
+        streamRef.current
+          .getTracks()
+          .forEach((track) =>
+            track.stop()
+          );
+
+        streamRef.current =
+          null;
+      }
+
+      if (
+        !navigator.mediaDevices
+          ?.getUserMedia
+      ) {
+        throw new Error(
+          "Camera access requires localhost or HTTPS."
+        );
+      }
+
+      let stream;
+
+      try {
+        stream =
+          await navigator.mediaDevices.getUserMedia(
+            {
+              video: {
+                facingMode: {
+                  ideal:
+                    "environment",
+                },
+
+                width: {
+                  ideal: 1920,
+                },
+
+                height: {
+                  ideal: 1080,
+                },
+              },
+
+              audio: false,
+            }
+          );
+      } catch {
+        stream =
+          await navigator.mediaDevices.getUserMedia(
+            {
+              video: true,
+              audio: false,
+            }
+          );
+      }
+
+      streamRef.current =
+        stream;
+
+      if (
+        videoRef.current
+      ) {
+        videoRef.current.srcObject =
+          stream;
+
+        await videoRef.current.play();
+      }
+
+      setCameraActive(true);
+    } catch (error) {
+      console.error(
+        "Camera error:",
+        error
+      );
+
+      setCameraActive(false);
+
+      setCameraError(
+        "Unable to access the camera. Allow camera permission and try again."
+      );
+    } finally {
+      setCameraLoading(false);
+    }
+  };
+
+  /* =====================================================
+     STOP CAMERA
+  ===================================================== */
+
+  const stopCamera = () => {
+    if (
+      streamRef.current
+    ) {
+      streamRef.current
+        .getTracks()
+        .forEach((track) =>
+          track.stop()
+        );
+
+      streamRef.current =
+        null;
+    }
+
+    if (
+      videoRef.current
+    ) {
+      videoRef.current.srcObject =
+        null;
+    }
+
+    setCameraActive(false);
+  };
+
+  /* =====================================================
+     CAPTURE FRAME
+  ===================================================== */
+
+  const captureFrame = () => {
+    const video =
+      videoRef.current;
+
+    const canvas =
+      canvasRef.current;
+
+    if (
+      !video ||
+      !canvas ||
+      !video.videoWidth ||
+      !video.videoHeight
+    ) {
+      return null;
+    }
+
+    canvas.width =
+      video.videoWidth;
+
+    canvas.height =
+      video.videoHeight;
+
+    const context =
+      canvas.getContext("2d");
+
+    context.drawImage(
+      video,
+      0,
+      0,
+      canvas.width,
+      canvas.height
+    );
+
+    return canvas.toDataURL(
+      "image/jpeg",
+      0.92
+    );
+  };
+
+  /* =====================================================
+     SCAN PRE-OP TRAY
+  ===================================================== */
+
+  const scanTray = () => {
+    if (!cameraActive) {
+      return;
+    }
+
+    const frame =
+      captureFrame();
+
+    if (!frame) {
+      setCameraError(
+        "Camera is still starting. Wait a moment and try again."
+      );
+
+      return;
+    }
+
+    setCameraError("");
+    setScanStatus(
+      "scanning"
+    );
+
+    setPreOpCaptured(
+      false
+    );
+
+    if (timerRef.current) {
+      clearTimeout(
+        timerRef.current
+      );
+    }
+
+    timerRef.current =
+      setTimeout(() => {
+        setCapturedImage(
+          frame
+        );
+
+        /*
+         * IMPORTANT
+         *
+         * This is what Final Reconciliation
+         * reads later.
+         */
+
+        setPreOpCaptured(
+          true
+        );
+
+        setScanStatus(
+          "complete"
+        );
+      }, 2000);
+  };
+
+  /* =====================================================
+     RESCAN
+  ===================================================== */
+
+  const rescanTray = () => {
+    setPreOpCaptured(
+      false
+    );
+
+    setCapturedImage(
+      null
+    );
+
+    setScanStatus(
+      "idle"
+    );
+
+    setCameraError("");
+  };
+
+  /* =====================================================
+     NAVIGATION
+  ===================================================== */
+
+  const goBack = () => {
+    stopCamera();
+
+    navigate(
+      "/rfid-registration"
+    );
+  };
+
+  const continueToProcedure =
+    () => {
+      if (
+        scanStatus !==
+        "complete"
+      ) {
+        return;
+      }
+
+      stopCamera();
+
+      navigate(
+        "/procedure-active"
+      );
+    };
+
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-[#F5F0E8] text-[#2D2A26]">
+
+      {/* BACKGROUND */}
+
+      <div className="pointer-events-none fixed inset-0">
+
+        <motion.div
+          animate={{
+            scale: [
+              1.03,
+              1.07,
+              1.03,
+            ],
+          }}
+          transition={{
+            duration: 24,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          className="absolute inset-0 bg-[url('/doctors-bg.jpg')] bg-cover bg-center"
+          style={{
+            opacity: 0.15,
+          }}
+        />
+
+        <div className="absolute inset-0 bg-gradient-to-r from-[#F5F0E8]/98 via-[#F5F0E8]/91 to-[#F5F0E8]/61" />
+
+      </div>
+
+      {/* HEADER */}
+
+      <header className="relative z-40 border-b border-[#DED5CA] bg-[#FAF7F2]/82 backdrop-blur-2xl">
+
+        <div className="mx-auto flex h-[78px] max-w-[1600px] items-center justify-between px-6 lg:px-10">
+
+          <div className="flex items-center gap-4">
+
+            <motion.button
+              whileHover={{
+                x: -3,
+              }}
+              onClick={goBack}
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#DDD2C5] bg-[#FFFDF9] text-[#897D72]"
+            >
+
+              <ArrowLeft className="h-4 w-4" />
+
+            </motion.button>
+
+            <div className="flex items-center gap-3">
+
+              <div className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-[#D4C5B3] bg-[#FFFDF9]">
+
+                <Camera className="h-5 w-5 text-[#9A724A]" />
+
+                <span
+                  className={`absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full ${
+                    cameraActive
+                      ? "animate-pulse bg-[#789477]"
+                      : "bg-[#BDB3A8]"
+                  }`}
+                />
+
+              </div>
+
+              <div>
+
+                <div className="text-sm font-semibold tracking-[0.14em]">
+                  SURGITRACK
+                </div>
+
+                <div className="text-[10px] text-[#9D9287]">
+                  PRE-OPERATIVE VISION
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          <div className="hidden items-center gap-3 sm:flex">
+
+            <div className="text-right">
+
+              <div className="text-sm font-medium">
+                {user.name}
+              </div>
+
+              <div className="text-[11px] text-[#968C82]">
+                {user.employeeId} · {user.role}
+              </div>
+
+            </div>
+
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#D2C3B1] bg-[#F6EEE4]">
+
+              <UserRound className="h-4 w-4 text-[#9A724A]" />
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </header>
+
+      {/* MAIN */}
+
+      <main className="relative z-10 mx-auto max-w-[1500px] px-5 py-9 lg:px-8">
+
+        <div className="mb-7">
+
+          <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#9A724A]">
+
+            <Eye className="h-4 w-4" />
+
+            Live Computer Vision
+
+          </div>
+
+          <h1 className="text-3xl font-semibold tracking-[-0.035em] lg:text-4xl">
+
+            Pre-operative tray scan
+
+          </h1>
+
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-[#877D73]">
+
+            Position the complete prepared surgical tray inside
+            the live camera frame.
+
+          </p>
+
+        </div>
+
+        {/* STATUS */}
+
+        <div className="mb-6 flex flex-wrap gap-3">
+
+          <StatusBox
+            icon={
+              RadioTower
+            }
+            label={`${scans.length} RFID tags`}
+          />
+
+          <StatusBox
+            icon={
+              cameraActive
+                ? Video
+                : CameraOff
+            }
+            label={
+              cameraActive
+                ? "Camera Live"
+                : "Camera Offline"
+            }
+          />
+
+          <StatusBox
+            icon={
+              ShieldCheck
+            }
+            label={
+              procedure?.caseId ||
+              "No active case"
+            }
+          />
+
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-[1.35fr_.65fr]">
+
+          {/* CAMERA */}
+
+          <section className="overflow-hidden rounded-[28px] border border-[#D9CDBF] bg-[#FFFDF9]/88 shadow-[0_20px_55px_rgba(80,62,42,.07)]">
+
+            <div className="flex items-center justify-between border-b border-[#E8E0D7] px-6 py-5">
+
+              <div>
+
+                <h2 className="font-semibold">
+                  Live tray camera
+                </h2>
+
+                <p className="mt-1 text-xs text-[#958B81]">
+                  Pre-operative baseline
+                </p>
+
+              </div>
+
+              <div
+                className={`rounded-full border px-3 py-1.5 text-[10px] font-semibold ${
+                  cameraActive
+                    ? "border-[#C7D2C1] bg-[#F4F8F1] text-[#698067]"
+                    : "border-[#DDD3C7] bg-[#F6F1EB] text-[#998E84]"
+                }`}
+              >
+
+                {cameraActive
+                  ? "LIVE"
+                  : "OFFLINE"}
+
+              </div>
+
+            </div>
+
+            <div className="p-6">
+
+              <div className="relative min-h-[540px] overflow-hidden rounded-[26px] bg-[#292622]">
+
+                <video
+                  ref={videoRef}
+                  autoPlay
+                  muted
+                  playsInline
+                  className={`absolute inset-0 h-full w-full object-cover ${
+                    cameraActive &&
+                    !capturedImage
+                      ? "opacity-100"
+                      : "opacity-0"
+                  }`}
+                />
+
+                {capturedImage && (
+
+                  <img
+                    src={
+                      capturedImage
+                    }
+                    alt="Pre-op tray"
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
+
+                )}
+
+                <canvas
+                  ref={canvasRef}
+                  className="hidden"
+                />
+
+                {!cameraActive &&
+                  !cameraLoading && (
+
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+
+                    <Camera className="h-10 w-10 text-[#D8BA98]" />
+
+                    <div className="mt-5 text-lg font-semibold text-white">
+                      Start live camera
+                    </div>
+
+                    <button
+                      onClick={
+                        startCamera
+                      }
+                      className="mt-6 rounded-xl bg-[#B88A5B] px-6 py-3 text-sm font-semibold text-white"
+                    >
+                      Start Camera
+                    </button>
+
+                  </div>
+
+                )}
+
+                {cameraLoading && (
+
+                  <div className="absolute inset-0 flex items-center justify-center">
+
+                    <LoaderCircle className="h-8 w-8 animate-spin text-[#D7B58F]" />
+
+                  </div>
+
+                )}
+
+                <AnimatePresence>
+
+                  {scanStatus ===
+                    "scanning" && (
+
+                    <motion.div
+                      initial={{
+                        opacity: 0,
+                      }}
+                      animate={{
+                        opacity: 1,
+                      }}
+                      exit={{
+                        opacity: 0,
+                      }}
+                      className="absolute inset-0 bg-black/25"
+                    >
+
+                      <motion.div
+                        initial={{
+                          top: "8%",
+                        }}
+                        animate={{
+                          top: "90%",
+                        }}
+                        transition={{
+                          duration: 1.8,
+                        }}
+                        className="absolute left-[5%] right-[5%] h-[2px] bg-[#EAC59E]"
+                      />
+
+                      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-black/65 px-8 py-6 text-center text-white">
+
+                        <LoaderCircle className="mx-auto h-6 w-6 animate-spin" />
+
+                        <div className="mt-3 text-sm font-semibold">
+                          Scanning tray
+                        </div>
+
+                      </div>
+
+                    </motion.div>
+
+                  )}
+
+                </AnimatePresence>
+
+                {scanStatus ===
+                  "complete" && (
+
+                  <div className="absolute right-5 top-5 flex items-center gap-2 rounded-full bg-[#F4FAF1] px-4 py-2 text-[10px] font-semibold text-[#668064]">
+
+                    <CheckCircle2 className="h-4 w-4" />
+
+                    PRE-OP READY
+
+                  </div>
+
+                )}
+
+              </div>
+
+              {cameraError && (
+
+                <div className="mt-4 rounded-xl bg-[#FBF0ED] px-4 py-3 text-xs text-[#A15E54]">
+                  {cameraError}
+                </div>
+
+              )}
+
+              <div className="mt-5">
+
+                {scanStatus ===
+                "complete" ? (
+
+                  <button
+                    onClick={
+                      rescanTray
+                    }
+                    className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#D2C4B5] bg-[#F7F1EA] text-sm font-semibold"
+                  >
+
+                    <RefreshCw className="h-4 w-4" />
+
+                    Rescan Tray
+
+                  </button>
+
+                ) : (
+
+                  <button
+                    onClick={
+                      scanTray
+                    }
+                    disabled={
+                      !cameraActive ||
+                      scanStatus ===
+                        "scanning"
+                    }
+                    className={`flex h-12 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold ${
+                      cameraActive &&
+                      scanStatus !==
+                        "scanning"
+                        ? "bg-[#A27A53] text-white"
+                        : "cursor-not-allowed bg-[#E5DDD4] text-[#AAA096]"
+                    }`}
+                  >
+
+                    <ScanLine className="h-4 w-4" />
+
+                    {scanStatus ===
+                    "scanning"
+                      ? "Scanning..."
+                      : "Scan Tray"}
+
+                  </button>
+
+                )}
+
+              </div>
+
+            </div>
+
+          </section>
+
+          {/* RIGHT */}
+
+          <div className="space-y-6">
+
+            <section className="rounded-[28px] border border-[#DED3C6] bg-[#FFFDF9]/88 p-6">
+
+              <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#98704A]">
+                Pre-Op Status
+              </div>
+
+              {scanStatus ===
+              "complete" ? (
+
+                <div className="mt-6 rounded-2xl border border-[#C4D4BE] bg-[#F2F8EF] p-5">
+
+                  <CheckCircle2 className="h-6 w-6 text-[#70896E]" />
+
+                  <div className="mt-3 text-sm font-semibold">
+                    Baseline captured
+                  </div>
+
+                  <div className="mt-2 text-xs text-[#788876]">
+                    Pre-operative acquisition is complete.
+                  </div>
+
+                </div>
+
+              ) : (
+
+                <div className="mt-6 rounded-2xl border border-dashed border-[#DDD2C5] p-6 text-center text-sm">
+                  Awaiting tray scan
+                </div>
+
+              )}
+
+            </section>
+
+            <button
+              onClick={
+                continueToProcedure
+              }
+              disabled={
+                scanStatus !==
+                "complete"
+              }
+              className={`flex h-14 w-full items-center justify-center gap-3 rounded-2xl text-sm font-semibold ${
+                scanStatus ===
+                "complete"
+                  ? "bg-[#A27A53] text-white"
+                  : "cursor-not-allowed bg-[#E6DED5] text-[#AAA096]"
+              }`}
+            >
+
+              Continue to Procedure
+
+              <ArrowRight className="h-4 w-4" />
+
+            </button>
+
+            <button
+              onClick={goBack}
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#D7CCBF] bg-[#FFFDF9]"
+            >
+
+              <ArrowLeft className="h-4 w-4" />
+
+              Back to RFID
+
+            </button>
+
+          </div>
+
+        </div>
+
+      </main>
+
+    </div>
+  );
+}
+
+function StatusBox({
+  icon: Icon,
+  label,
+}) {
+  return (
+    <div className="flex items-center gap-2 rounded-xl border border-[#DED4C8] bg-[#FFFDF9]/82 px-4 py-2 text-xs">
+
+      <Icon className="h-4 w-4 text-[#9A724A]" />
+
+      {label}
+
+    </div>
+  );
+}
+
+============================================================
+FILE: C:\Users\Annwesh\SurgiTrack-git\frontend\src\pages\ProcedureActive.jsx
+============================================================
+
+import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+
+import {
+  Activity,
+  ArrowLeft,
+  CheckCircle2,
+  Clock3,
+  HeartPulse,
+  RadioTower,
+  ScanLine,
+  Stethoscope,
+  UserRound,
+} from "lucide-react";
+
+import {
+  getCurrentProcedure,
+  getCurrentUser,
+  getRfidScans,
+} from "../utils/demoStore";
+
+export default function ProcedureActive() {
+  const navigate = useNavigate();
+
+  const user = getCurrentUser();
+  const procedure = getCurrentProcedure();
+  const scans = getRfidScans();
+
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-[#F5F0E8] text-[#2D2A26]">
+
+      {/* BACKGROUND */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <motion.div
+          initial={{
+            scale: 1.03,
+          }}
+          animate={{
+            scale: [1.03, 1.07, 1.03],
+            x: [0, 8, 0],
+          }}
+          transition={{
+            duration: 24,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          className="absolute inset-0 bg-[url('/doctors-bg.jpg')] bg-cover bg-center"
+          style={{
+            opacity: 0.2,
+            filter:
+              "saturate(.68) contrast(.93) brightness(1.04)",
+          }}
+        />
+
+        <div className="absolute inset-0 bg-gradient-to-r from-[#F5F0E8]/97 via-[#F5F0E8]/84 to-[#F5F0E8]/55" />
+
+        <div className="absolute inset-0 bg-gradient-to-b from-[#F5F0E8]/30 via-transparent to-[#F5F0E8]/78" />
+
+        <motion.div
+          animate={{
+            x: [0, 40, -15, 0],
+            y: [0, -20, 15, 0],
+          }}
+          transition={{
+            duration: 22,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          className="absolute -left-40 top-20 h-[34rem] w-[34rem] rounded-full bg-[#E1CEB8]/30 blur-[120px]"
+        />
+      </div>
+
+      {/* HEADER */}
+      <header className="relative z-40 border-b border-[#DED5CA] bg-[#FAF7F2]/82 backdrop-blur-2xl">
+        <div className="mx-auto flex h-[78px] max-w-[1600px] items-center justify-between px-6 lg:px-10">
+
+          <div className="flex items-center gap-4">
+
+            <motion.button
+              whileHover={{
+                x: -3,
+              }}
+              onClick={() =>
+                navigate("/pre-op-scan")
+              }
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#DDD2C5] bg-[#FFFDF9] text-[#897D72] shadow-sm transition hover:text-[#5E554D]"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </motion.button>
+
+            <div className="flex items-center gap-3">
+
+              <div className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-[#D4C5B3] bg-[#FFFDF9]">
+                <Activity className="h-5 w-5 text-[#9A724A]" />
+
+                <span className="absolute -right-1 -top-1 h-2.5 w-2.5 animate-pulse rounded-full bg-[#789477]" />
+              </div>
+
+              <div>
+                <div className="text-sm font-semibold tracking-[0.14em]">
+                  SURGITRACK
+                </div>
+
+                <div className="text-[10px] text-[#9D9287]">
+                  PROCEDURE ACTIVE
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+
+          <div className="hidden items-center gap-3 sm:flex">
+
+            <div className="text-right">
+              <div className="text-sm font-medium">
+                {user.name}
+              </div>
+
+              <div className="text-[11px] text-[#968C82]">
+                {user.role}
+              </div>
+            </div>
+
+            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#D2C3B1] bg-[#F6EEE4]">
+              <UserRound className="h-4 w-4 text-[#9A724A]" />
+            </div>
+
+          </div>
+
+        </div>
+      </header>
+
+      {/* MAIN */}
+      <main className="relative z-10 mx-auto max-w-[1450px] px-5 py-10 lg:px-8">
+
+        {/* HERO */}
+        <motion.section
+          initial={{
+            opacity: 0,
+            y: 20,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+        >
+          <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#6D846B]">
+
+            <span className="relative flex h-3 w-3">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#789378]/40" />
+              <span className="relative inline-flex h-3 w-3 rounded-full bg-[#789378]" />
+            </span>
+
+            Live Procedure
+          </div>
+
+          <h1 className="text-3xl font-semibold tracking-[-0.035em] text-[#302C28] lg:text-4xl">
+            Procedure in progress
+          </h1>
+
+          <p className="mt-3 text-sm leading-6 text-[#877D73]">
+            SurgiTrack is maintaining the procedure session and
+            registered instrument inventory.
+          </p>
+        </motion.section>
+
+        {/* ACTIVE CASE BAR */}
+        <motion.section
+          initial={{
+            opacity: 0,
+            y: 15,
+          }}
+          animate={{
+            opacity: 1,
+            y: 0,
+          }}
+          transition={{
+            delay: 0.1,
+          }}
+          className="mt-8 flex flex-col justify-between gap-4 rounded-[22px] border border-[#C9D5C4] bg-[#F4F8F1]/88 px-6 py-5 shadow-[0_16px_40px_rgba(73,93,70,.06)] backdrop-blur-xl md:flex-row md:items-center"
+        >
+
+          <div className="flex items-center gap-4">
+
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E1ECDE]">
+              <HeartPulse className="h-6 w-6 text-[#6E886C]" />
+            </div>
+
+            <div>
+              <div className="text-sm font-semibold text-[#536852]">
+                Active surgical procedure
+              </div>
+
+              <div className="mt-1 text-xs text-[#81917F]">
+                {procedure?.caseId || "Case not specified"}
+
+                {procedure?.otRoom
+                  ? ` · ${procedure.otRoom}`
+                  : ""}
+              </div>
+            </div>
+
+          </div>
+
+          <div className="flex items-center gap-2 rounded-full border border-[#BCD0B7] bg-[#F6FBF4] px-4 py-2 text-[11px] font-semibold text-[#658063]">
+
+            <span className="h-2 w-2 animate-pulse rounded-full bg-[#759273]" />
+
+            PROCEDURE ACTIVE
+          </div>
+
+        </motion.section>
+
+        {/* STATUS CARDS */}
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+
+          <StatusCard
+            icon={Stethoscope}
+            title="Procedure"
+            value={
+              procedure?.procedureName ||
+              "Active"
+            }
+          />
+
+          <StatusCard
+            icon={RadioTower}
+            title="RFID Registered"
+            value={String(scans.length).padStart(
+              2,
+              "0"
+            )}
+          />
+
+          <StatusCard
+            icon={ScanLine}
+            title="Pre-Op Vision"
+            value="Captured"
+            success
+          />
+
+          <StatusCard
+            icon={Clock3}
+            title="Current Stage"
+            value="In Progress"
+            success
+          />
+
+        </div>
+
+        {/* BODY */}
+        <div className="mt-6 grid gap-6 xl:grid-cols-[1.25fr_.75fr]">
+
+          {/* LEFT */}
+          <motion.section
+            initial={{
+              opacity: 0,
+              x: -20,
+            }}
+            animate={{
+              opacity: 1,
+              x: 0,
+            }}
+            transition={{
+              delay: 0.2,
+            }}
+            className="rounded-[28px] border border-[#DED3C6] bg-[#FFFDF9]/86 p-7 shadow-[0_20px_55px_rgba(80,62,42,.06)] backdrop-blur-xl"
+          >
+
+            <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#98704A]">
+              Procedure Information
+            </div>
+
+            <h2 className="mt-2 text-xl font-semibold text-[#39332E]">
+              Active case details
+            </h2>
+
+            <div className="mt-7 grid gap-4 sm:grid-cols-2">
+
+              <InfoBox
+                title="Case ID"
+                value={
+                  procedure?.caseId ||
+                  "—"
+                }
+              />
+
+              <InfoBox
+                title="Operating Theatre"
+                value={
+                  procedure?.otRoom ||
+                  "—"
+                }
+              />
+
+              <InfoBox
+                title="Procedure"
+                value={
+                  procedure?.procedureName ||
+                  "—"
+                }
+              />
+
+              <InfoBox
+                title="Lead Surgeon"
+                value={
+                  procedure?.surgeon ||
+                  "—"
+                }
+              />
+
+            </div>
+
+            {/* RFID */}
+            <div className="mt-8 border-t border-[#E8E0D7] pt-6">
+
+              <div className="flex items-center justify-between gap-4">
+
+                <div>
+                  <h3 className="text-sm font-semibold text-[#49413A]">
+                    Registered RFID inventory
+                  </h3>
+
+                  <p className="mt-1 text-xs text-[#978D83]">
+                    Instrument tags registered for this procedure
+                  </p>
+                </div>
+
+                <div className="rounded-full bg-[#F2E8DC] px-4 py-2 text-sm font-semibold text-[#94704E]">
+                  {scans.length}
+
+                  <span className="ml-1 text-xs font-normal">
+                    tags
+                  </span>
+                </div>
+
+              </div>
+
+              {scans.length === 0 ? (
+
+                <div className="mt-5 rounded-2xl border border-dashed border-[#DDD2C5] bg-[#FAF6F0] px-5 py-8 text-center text-sm text-[#948A80]">
+                  No RFID tags registered.
+                </div>
+
+              ) : (
+
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+
+                  {scans.map((scan) => (
+
+                    <motion.div
+                      key={scan.uid}
+                      whileHover={{
+                        y: -2,
+                      }}
+                      className="rounded-2xl border border-[#E2D9CF] bg-[#FAF7F2] p-4"
+                    >
+
+                      <div className="flex items-center justify-between gap-3">
+
+                        <div>
+
+                          <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#9C9288]">
+                            RFID UID
+                          </div>
+
+                          <div className="mt-2 font-mono text-xs font-semibold text-[#4A433D]">
+                            {scan.uid}
+                          </div>
+
+                        </div>
+
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#F0E5D8]">
+                          <RadioTower className="h-4 w-4 text-[#A27A53]" />
+                        </div>
+
+                      </div>
+
+                    </motion.div>
+
+                  ))}
+
+                </div>
+
+              )}
+
+            </div>
+
+          </motion.section>
+
+          {/* RIGHT */}
+          <div className="space-y-6">
+
+            {/* WORKFLOW */}
+            <motion.section
+              initial={{
+                opacity: 0,
+                x: 20,
+              }}
+              animate={{
+                opacity: 1,
+                x: 0,
+              }}
+              transition={{
+                delay: 0.25,
+              }}
+              className="rounded-[28px] border border-[#DED3C6] bg-[#FFFDF9]/88 p-6 shadow-[0_20px_55px_rgba(80,62,42,.05)] backdrop-blur-xl"
+            >
+
+              <div className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[#98704A]">
+                Verification Workflow
+              </div>
+
+              <h2 className="mt-2 text-lg font-semibold">
+                Procedure status
+              </h2>
+
+              <div className="mt-6">
+
+                <WorkflowStep
+                  number="01"
+                  title="Procedure Setup"
+                  complete
+                />
+
+                <WorkflowConnector />
+
+                <WorkflowStep
+                  number="02"
+                  title="RFID Registration"
+                  complete
+                />
+
+                <WorkflowConnector />
+
+                <WorkflowStep
+                  number="03"
+                  title="Pre-Op Vision"
+                  complete
+                />
+
+                <WorkflowConnector active />
+
+                <WorkflowStep
+                  number="04"
+                  title="Procedure"
+                  active
+                />
+
+                <WorkflowConnector />
+
+                <WorkflowStep
+                  number="05"
+                  title="Post-Op Vision"
+                />
+
+                <WorkflowConnector />
+
+                <WorkflowStep
+                  number="06"
+                  title="Final Reconciliation"
+                />
+
+              </div>
+
+            </motion.section>
+
+            {/* PREOP BASELINE */}
+            <motion.section
+              initial={{
+                opacity: 0,
+                y: 15,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              transition={{
+                delay: 0.35,
+              }}
+              className="rounded-[24px] border border-[#BED0B8] bg-[#F3F8F0]/92 p-6"
+            >
+
+              <div className="flex items-start gap-4">
+
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#DFECDA]">
+                  <CheckCircle2 className="h-5 w-5 text-[#6F896E]" />
+                </div>
+
+                <div>
+
+                  <div className="text-sm font-semibold text-[#536A52]">
+                    Pre-operative baseline recorded
+                  </div>
+
+                  <p className="mt-2 text-xs leading-5 text-[#788676]">
+                    The procedure is operating with its registered
+                    RFID inventory and pre-operative camera baseline.
+                  </p>
+
+                </div>
+
+              </div>
+
+            </motion.section>
+
+            {/* NEXT STAGE */}
+            <motion.button
+              whileHover={{
+                y: -3,
+                scale: 1.01,
+              }}
+              whileTap={{
+                scale: 0.985,
+              }}
+              onClick={() =>
+                navigate("/post-op-scan")
+              }
+              className="button-sheen relative flex h-14 w-full items-center justify-center overflow-hidden rounded-2xl bg-[#A27A53] text-sm font-semibold text-white shadow-[0_14px_32px_rgba(139,99,60,.22)]"
+            >
+
+              <span className="relative z-10 flex items-center gap-3">
+
+                Complete Procedure & Start Post-Op Scan
+
+                <ScanLine className="h-4 w-4" />
+
+              </span>
+
+            </motion.button>
+
+            {/* BACK */}
+            <motion.button
+              whileHover={{
+                x: -2,
+              }}
+              onClick={() =>
+                navigate("/pre-op-scan")
+              }
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#D7CCBF] bg-[#FFFDF9]/88 text-sm font-medium text-[#776C61] backdrop-blur-xl"
+            >
+
+              <ArrowLeft className="h-4 w-4" />
+
+              Back to Pre-Op Scan
+
+            </motion.button>
+
+          </div>
+
+        </div>
+
+      </main>
+
+    </div>
+  );
+}
+
+/* ------------------------------------------------
+   STATUS CARD
+------------------------------------------------ */
+
+function StatusCard({
+  icon: Icon,
+  title,
+  value,
+  success,
+}) {
+  return (
+    <motion.div
+      initial={{
+        opacity: 0,
+        y: 15,
+      }}
+      animate={{
+        opacity: 1,
+        y: 0,
+      }}
+      whileHover={{
+        y: -5,
+      }}
+      className="rounded-[22px] border border-[#DED3C6] bg-[#FFFDF9]/84 p-5 shadow-[0_14px_35px_rgba(82,64,45,.05)] backdrop-blur-xl"
+    >
+
+      <div
+        className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+          success
+            ? "bg-[#E5EFE2]"
+            : "bg-[#F2E8DC]"
+        }`}
+      >
+        <Icon
+          className={`h-5 w-5 ${
+            success
+              ? "text-[#6F896E]"
+              : "text-[#A27A53]"
+          }`}
+        />
+      </div>
+
+      <div className="mt-5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#998F85]">
+        {title}
+      </div>
+
+      <div className="mt-2 truncate text-lg font-semibold text-[#403933]">
+        {value}
+      </div>
+
+    </motion.div>
+  );
+}
+
+/* ------------------------------------------------
+   INFO BOX
+------------------------------------------------ */
+
+function InfoBox({
+  title,
+  value,
+}) {
+  return (
+    <div className="rounded-2xl border border-[#E2D9CF] bg-[#FAF7F2] p-5">
+
+      <div className="text-[10px] font-semibold uppercase tracking-[0.13em] text-[#9C9288]">
+        {title}
+      </div>
+
+      <div className="mt-2 text-sm font-medium text-[#49413A]">
+        {value}
+      </div>
+
+    </div>
+  );
+}
+
+/* ------------------------------------------------
+   WORKFLOW
+------------------------------------------------ */
+
+function WorkflowStep({
+  number,
+  title,
+  complete,
+  active,
+}) {
+  return (
+    <div className="flex items-center gap-4">
+
+      <div
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ${
+          complete
+            ? "bg-[#798E76] text-white"
+            : active
+            ? "bg-[#A27A53] text-white shadow-[0_0_0_6px_rgba(162,122,83,.10)]"
+            : "border border-[#D9CFC3] bg-[#FFFDF9] text-[#A0968B]"
+        }`}
+      >
+        {complete ? (
+          <CheckCircle2 className="h-4 w-4" />
+        ) : (
+          number
+        )}
+      </div>
+
+      <div>
+
+        <div
+          className={`text-sm font-medium ${
+            complete
+              ? "text-[#637A61]"
+              : active
+              ? "text-[#634D39]"
+              : "text-[#9A9086]"
+          }`}
+        >
+          {title}
+        </div>
+
+        {active && (
+          <div className="mt-1 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wider text-[#A27A53]">
+
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#A27A53]" />
+
+            Current Stage
+
+          </div>
+        )}
+
+      </div>
+
+    </div>
+  );
+}
+
+function WorkflowConnector({
+  active,
+}) {
+  return (
+    <div
+      className={`ml-[17px] h-7 w-px ${
+        active
+          ? "bg-[#C6A783]"
+          : "bg-[#DDD3C7]"
+      }`}
+    />
+  );
+}
+
+============================================================
+FILE: C:\Users\Annwesh\SurgiTrack-git\frontend\src\pages\RFIDRegistration.jsx
+============================================================
+
+import {
+  useEffect,
+  useState,
+} from "react";
+
+import {
+  AnimatePresence,
+  motion,
+} from "framer-motion";
+
+import {
+  useNavigate,
+} from "react-router-dom";
+
+import {
+  ArrowLeft,
+  ArrowRight,
+  Clock3,
+  Database,
+  RadioTower,
+  ScanLine,
+  Trash2,
+  UserRound,
+  Wifi,
+} from "lucide-react";
+
+import {
+  addRfidScan,
+  clearRfidScans,
+  getCurrentProcedure,
+  getCurrentUser,
+  getRfidScans,
+  removeRfidScan,
+} from "../utils/demoStore";
+
+function randomByte() {
+  return Math.floor(
+    Math.random() * 256
+  )
+    .toString(16)
+    .padStart(2, "0")
+    .toUpperCase();
+}
+
+function generateUid() {
+  return [
+    randomByte(),
+    randomByte(),
+    randomByte(),
+    randomByte(),
+  ].join(":");
+}
+
+export default function RFIDRegistration() {
+  const navigate =
+    useNavigate();
+
+  const user =
+    getCurrentUser();
+
+  const procedure =
+    getCurrentProcedure();
+
+  const [scans, setScans] =
+    useState([]);
+
+  const [
+    lastScan,
+    setLastScan,
+  ] = useState(null);
+
+  const [
+    message,
+    setMessage,
+  ] = useState("");
+
+  useEffect(() => {
+    setScans(
+      getRfidScans()
+    );
+  }, []);
+
+  const simulateScan = () => {
+    let uid =
+      generateUid();
+
+    while (
+      scans.some(
+        (item) =>
+          item.uid === uid
+      )
+    ) {
+      uid =
+        generateUid();
+    }
+
+    const scan = {
+      uid,
+
+      scannedAt:
+        new Date().toISOString(),
+
+      /*
+       * IMPORTANT:
+       * React does NOT assign
+       * instrument name.
+       *
+       * Later FastAPI will return:
+       *
+       * instrument_id
+       * instrument_code
+       * instrument_name
+       * category
+       */
+      instrument: null,
+
+      resolution:
+        "pending_db",
+    };
+
+    const result =
+      addRfidScan(scan);
+
+    setScans(
+      result.scans
+    );
+
+    setLastScan(scan);
+
+    setMessage("");
+  };
+
+  const remove = (uid) => {
+    setScans(
+      removeRfidScan(uid)
+    );
+
+    if (
+      lastScan?.uid ===
+      uid
+    ) {
+      setLastScan(null);
+    }
+  };
+
+  const clear = () => {
+    clearRfidScans();
+
+    setScans([]);
+    setLastScan(null);
+  };
+
+  return (
+    <div className="relative min-h-screen overflow-hidden bg-[#F5F0E8] text-[#2D2A26]">
+
+      {/* BACKGROUND */}
+
+      <div className="pointer-events-none fixed inset-0">
+
+        <motion.div
+          animate={{
+            scale: [
+              1.03,
+              1.07,
+              1.03,
+            ],
+          }}
+          transition={{
+            duration: 24,
+            repeat: Infinity,
+          }}
+          className="absolute inset-0 bg-[url('/doctors-bg.jpg')] bg-cover bg-center"
+          style={{
+            opacity: 0.17,
+          }}
+        />
+
+        <div className="absolute inset-0 bg-gradient-to-r from-[#F5F0E8]/98 via-[#F5F0E8]/89 to-[#F5F0E8]/55" />
+
+      </div>
+
+      {/* HEADER */}
+
+      <header className="relative z-40 border-b border-[#DED5CA] bg-[#FAF7F2]/82 backdrop-blur-2xl">
+
+        <div className="mx-auto flex h-[78px] max-w-[1600px] items-center justify-between px-6 lg:px-10">
+
+          <div className="flex items-center gap-4">
+
+            <button
+              onClick={() =>
+                navigate(
+                  "/new-procedure"
+                )
+              }
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#DDD2C5] bg-[#FFFDF9]"
+            >
+
+              <ArrowLeft className="h-4 w-4" />
+
+            </button>
+
+            <div className="flex items-center gap-3">
+
+              <div className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-[#D4C5B3] bg-[#FFFDF9]">
+
+                <RadioTower className="h-5 w-5 text-[#9A724A]" />
+
+                <span className="absolute -right-1 -top-1 h-2.5 w-2.5 animate-pulse rounded-full bg-[#789477]" />
+
+              </div>
+
+              <div>
+
+                <div className="text-sm font-semibold tracking-[0.14em]">
+                  SURGITRACK
+                </div>
+
+                <div className="text-[10px] text-[#9D9287]">
+                  RFID REGISTRATION
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+          <div className="hidden items-center gap-3 sm:flex">
+
+            <div className="text-right">
+
+              <div className="text-sm font-medium">
+                {user.name}
+              </div>
+
+              <div className="text-[11px] text-[#968C82]">
+                {user.role}
+              </div>
+
+            </div>
+
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#F6EEE4]">
+
+              <UserRound className="h-4 w-4 text-[#9A724A]" />
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </header>
+
+      <main className="relative z-10 mx-auto max-w-[1500px] px-5 py-9 lg:px-8">
+
+        <div className="mb-7">
+
+          <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#9A724A]">
+
+            <RadioTower className="h-4 w-4" />
+
+            Instrument RFID Registration
+
+          </div>
+
+          <h1 className="text-3xl font-semibold tracking-[-0.035em] lg:text-4xl">
+
+            Register procedure instruments
+
+          </h1>
+
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-[#877D73]">
+
+            Each detected RFID UID
+            will eventually be resolved
+            against the SurgiTrack
+            instrument database through
+            FastAPI.
+
+          </p>
+
+        </div>
+
+        {/* PROCEDURE BAR */}
+
+        <div className="mb-6 rounded-[20px] border border-[#DED3C6] bg-[#FFFDF9]/80 px-5 py-4 backdrop-blur-xl">
+
+          <div className="text-sm font-semibold">
+            {procedure?.caseId ||
+              "No active case"}
+          </div>
+
+          <div className="mt-1 text-xs text-[#968B80]">
+
+            {procedure?.otRoom ||
+              "—"}
+
+            {procedure?.procedureName
+              ? ` · ${procedure.procedureName}`
+              : ""}
+
+          </div>
+
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-[.72fr_1.28fr]">
+
+          {/* SCANNER */}
+
+          <motion.section
+            initial={{
+              opacity: 0,
+              x: -20,
+            }}
+            animate={{
+              opacity: 1,
+              x: 0,
+            }}
+            className="rounded-[28px] border border-[#D8CCBE] bg-[#FFFDF9]/86 p-7 shadow-[0_20px_55px_rgba(80,62,42,.07)] backdrop-blur-xl"
+          >
+
+            <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#98704A]">
+              RFID Checkpoint
+            </div>
+
+            <h2 className="mt-2 text-xl font-semibold">
+              Present RFID tag
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-[#8C8278]">
+
+              Hardware integration will
+              replace the simulation
+              trigger below.
+
+            </p>
+
+            <div className="relative mx-auto my-8 flex h-[270px] items-center justify-center">
+
+              {[
+                0,
+                1,
+                2,
+              ].map(
+                (ring) => (
+
+                  <motion.div
+                    key={
+                      ring
+                    }
+                    animate={{
+                      scale: [
+                        0.9,
+                        1.25,
+                        0.9,
+                      ],
+
+                      opacity: [
+                        0.25,
+                        0.04,
+                        0.25,
+                      ],
+                    }}
+                    transition={{
+                      duration: 3,
+                      repeat: Infinity,
+                      delay:
+                        ring *
+                        0.55,
+                    }}
+                    className="absolute rounded-full border border-[#B79067]"
+                    style={{
+                      width:
+                        130 +
+                        ring *
+                          55,
+
+                      height:
+                        130 +
+                        ring *
+                          55,
+                    }}
+                  />
+
+                )
+              )}
+
+              <motion.div
+                animate={{
+                  y: [
+                    0,
+                    -6,
+                    0,
+                  ],
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                }}
+                className="relative z-10 flex h-28 w-28 items-center justify-center rounded-[32px] border border-[#D0BEA9] bg-[#F7EEE4]"
+              >
+
+                <ScanLine className="h-11 w-11 text-[#9A7149]" />
+
+              </motion.div>
+
+            </div>
+
+            <div className="text-center">
+
+              <div className="text-sm font-medium text-[#776B60]">
+                Waiting for RFID UID...
+              </div>
+
+              <div className="mt-2 flex items-center justify-center gap-2 text-xs text-[#A0968A]">
+
+                <Wifi className="h-3.5 w-3.5" />
+
+                RC522 integration pending
+
+              </div>
+
+            </div>
+
+            <motion.button
+              onClick={
+                simulateScan
+              }
+              whileHover={{
+                y: -2,
+              }}
+              whileTap={{
+                scale: 0.98,
+              }}
+              className="button-sheen relative mt-8 flex h-12 w-full items-center justify-center overflow-hidden rounded-xl bg-[#A27A53] text-sm font-semibold text-white"
+            >
+
+              <span className="relative z-10 flex items-center gap-3">
+
+                <RadioTower className="h-4 w-4" />
+
+                Simulate RFID UID
+
+              </span>
+
+            </motion.button>
+
+            <p className="mt-3 text-center text-[10px] leading-4 text-[#AAA095]">
+
+              Temporary frontend
+              simulation only.
+
+            </p>
+
+            <AnimatePresence>
+
+              {lastScan && (
+
+                <motion.div
+                  initial={{
+                    opacity: 0,
+                    y: 10,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    y: 0,
+                  }}
+                  className="mt-6 rounded-2xl border border-[#C8D5C2] bg-[#F3F8F0] p-4"
+                >
+
+                  <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#789176]">
+                    UID Captured
+                  </div>
+
+                  <div className="mt-2 font-mono text-sm font-semibold">
+                    {
+                      lastScan.uid
+                    }
+                  </div>
+
+                  <div className="mt-2 flex items-center gap-2 text-xs text-[#7E8F7C]">
+
+                    <Database className="h-3.5 w-3.5" />
+
+                    Awaiting DB
+                    instrument lookup
+
+                  </div>
+
+                </motion.div>
+
+              )}
+
+            </AnimatePresence>
+
+          </motion.section>
+
+          {/* LIST */}
+
+          <motion.section
+            initial={{
+              opacity: 0,
+              x: 20,
+            }}
+            animate={{
+              opacity: 1,
+              x: 0,
+            }}
+            className="overflow-hidden rounded-[28px] border border-[#DED3C6] bg-[#FFFDF9]/86 shadow-[0_20px_55px_rgba(80,62,42,.06)] backdrop-blur-xl"
+          >
+
+            <div className="flex items-center justify-between border-b border-[#E8E0D7] px-6 py-5">
+
+              <div>
+
+                <h2 className="font-semibold">
+                  Scanned RFID tags
+                </h2>
+
+                <p className="mt-1 text-xs text-[#958B81]">
+                  Unlimited procedure
+                  instrument scans
+                </p>
+
+              </div>
+
+              <div className="flex items-center gap-3">
+
+                <div className="rounded-full bg-[#F2E8DC] px-4 py-2 text-sm font-semibold text-[#94704E]">
+
+                  {scans.length}
+
+                  <span className="ml-1 text-xs font-normal">
+                    scanned
+                  </span>
+
+                </div>
+
+                {scans.length >
+                  0 && (
+
+                  <button
+                    onClick={
+                      clear
+                    }
+                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#DDD2C7]"
+                  >
+
+                    <Trash2 className="h-4 w-4" />
+
+                  </button>
+
+                )}
+
+              </div>
+
+            </div>
+
+            {scans.length ===
+            0 ? (
+
+              <div className="flex min-h-[430px] flex-col items-center justify-center px-8 text-center">
+
+                <RadioTower className="h-8 w-8 text-[#A27A53]" />
+
+                <h3 className="mt-5 font-semibold">
+                  No RFID tags
+                  scanned yet
+                </h3>
+
+                <p className="mt-2 max-w-sm text-sm leading-6 text-[#988E84]">
+
+                  There is no fixed
+                  instrument count.
+                  Scan every instrument
+                  required for the
+                  procedure.
+
+                </p>
+
+              </div>
+
+            ) : (
+
+              <div className="divide-y divide-[#EDE5DC]">
+
+                <AnimatePresence>
+
+                  {scans.map(
+                    (
+                      scan,
+                      index
+                    ) => (
+
+                      <motion.div
+                        key={
+                          scan.uid
+                        }
+                        initial={{
+                          opacity: 0,
+                          y: -8,
+                        }}
+                        animate={{
+                          opacity: 1,
+                          y: 0,
+                        }}
+                        className="grid gap-4 px-6 py-5 md:grid-cols-[1fr_.65fr_1fr_auto] md:items-center"
+                      >
+
+                        <div>
+
+                          <div className="text-[10px] uppercase tracking-[0.12em] text-[#9C9288]">
+                            RFID UID
+                          </div>
+
+                          <div className="mt-1 font-mono text-sm font-semibold">
+                            {
+                              scan.uid
+                            }
+                          </div>
+
+                        </div>
+
+                        <div>
+
+                          <div className="text-[10px] uppercase tracking-[0.12em] text-[#9C9288]">
+                            Scan
+                          </div>
+
+                          <div className="mt-1 flex items-center gap-2 text-xs">
+
+                            <Clock3 className="h-3.5 w-3.5" />
+
+                            {new Date(
+                              scan.scannedAt
+                            ).toLocaleTimeString()}
+
+                          </div>
+
+                        </div>
+
+                        <div>
+
+                          <div className="text-[10px] uppercase tracking-[0.12em] text-[#9C9288]">
+                            Instrument
+                          </div>
+
+                          <div className="mt-1 flex items-center gap-2 text-xs text-[#8B765E]">
+
+                            <Database className="h-3.5 w-3.5" />
+
+                            Pending DB
+                            lookup
+
+                          </div>
+
+                        </div>
+
+                        <button
+                          onClick={() =>
+                            remove(
+                              scan.uid
+                            )
+                          }
+                          className="text-[#B1A69B] hover:text-[#B8665B]"
+                        >
+
+                          <Trash2 className="h-4 w-4" />
+
+                        </button>
+
+                      </motion.div>
+
+                    )
+                  )}
+
+                </AnimatePresence>
+
+              </div>
+
+            )}
+
+            <div className="border-t border-[#E7DED4] bg-[#FBF8F3]/75 p-5">
+
+              <motion.button
+                disabled={
+                  scans.length ===
+                  0
+                }
+                onClick={() =>
+                  navigate(
+                    "/pre-op-scan"
+                  )
+                }
+                whileHover={
+                  scans.length >
+                  0
+                    ? {
+                        y: -2,
+                      }
+                    : {}
+                }
+                className={`flex h-13 w-full items-center justify-center rounded-xl text-sm font-semibold ${
+                  scans.length >
+                  0
+                    ? "button-sheen relative overflow-hidden bg-[#A27A53] text-white"
+                    : "cursor-not-allowed bg-[#E7DFD6] text-[#AAA096]"
+                }`}
+              >
+
+                <span className="relative z-10 flex items-center gap-3">
+
+                  Continue to Pre-Op Scan
+
+                  <ArrowRight className="h-4 w-4" />
+
+                </span>
+
+              </motion.button>
+
+            </div>
+
+          </motion.section>
+
+        </div>
+
+      </main>
+
+    </div>
+  );
+}
+
+============================================================
+FILE: C:\Users\Annwesh\SurgiTrack-git\frontend\src\services\api.js
+============================================================
+
+import {
+  getAuthToken,
+} from "../utils/demoStore";
+
+
+/* =========================================================
+   API CONFIGURATION
+
+   Local development:
+   http://127.0.0.1:8000
+
+   Later, when backend is deployed, you can set:
+
+   VITE_API_BASE_URL=https://your-backend-url.com
+========================================================= */
+
+export const API_BASE_URL = (
+  import.meta.env.VITE_API_BASE_URL ||
+  "http://127.0.0.1:8000"
+).replace(/\/$/, "");
+
+
+/* =========================================================
+   GENERIC REQUEST HELPER
+========================================================= */
+
+async function apiRequest(
+  path,
+  options = {}
+) {
+  const {
+    method = "GET",
+    body = null,
+    auth = false,
+    headers = {},
+  } = options;
+
+  const requestHeaders = {
+    Accept: "application/json",
+    ...headers,
+  };
+
+  /*
+   * Automatically attach JSON content type
+   * for normal JSON requests.
+   */
+
+  if (
+    body !== null &&
+    !(body instanceof FormData)
+  ) {
+    requestHeaders["Content-Type"] =
+      "application/json";
+  }
+
+  /*
+   * Attach JWT when endpoint requires
+   * authentication.
+   */
+
+  if (auth) {
+    const token =
+      getAuthToken();
+
+    if (!token) {
+      throw new Error(
+        "Authentication required."
+      );
+    }
+
+    requestHeaders.Authorization =
+      `Bearer ${token}`;
+  }
+
+  let response;
+
+  try {
+    response = await fetch(
+      `${API_BASE_URL}${path}`,
+      {
+        method,
+
+        headers:
+          requestHeaders,
+
+        body:
+          body === null
+            ? undefined
+            : body instanceof FormData
+            ? body
+            : JSON.stringify(
+                body
+              ),
+      }
+    );
+  } catch (error) {
+    console.error(
+      "API network error:",
+      error
+    );
+
+    throw new Error(
+      "Unable to connect to the SurgiTrack server. Make sure the backend is running."
+    );
+  }
+
+  /*
+   * Try to read backend response.
+   */
+
+  let data = null;
+
+  const contentType =
+    response.headers.get(
+      "content-type"
+    ) || "";
+
+  try {
+    if (
+      contentType.includes(
+        "application/json"
+      )
+    ) {
+      data =
+        await response.json();
+    } else {
+      const text =
+        await response.text();
+
+      data =
+        text || null;
+    }
+  } catch {
+    data = null;
+  }
+
+  /*
+   * FastAPI normally returns:
+   *
+   * {
+   *   "detail": "Error message"
+   * }
+   */
+
+  if (!response.ok) {
+    let message =
+      "Request failed.";
+
+    if (
+      data &&
+      typeof data === "object" &&
+      data.detail
+    ) {
+      if (
+        typeof data.detail ===
+        "string"
+      ) {
+        message =
+          data.detail;
+      } else {
+        message =
+          "The server rejected the request.";
+      }
+    } else if (
+      typeof data === "string" &&
+      data
+    ) {
+      message =
+        data;
+    }
+
+    throw new Error(
+      message
+    );
+  }
+
+  return data;
+}
+
+
+/* =========================================================
+   AUTHENTICATION
+========================================================= */
+
+export async function loginUser(
+  employeeId,
+  password
+) {
+  return apiRequest(
+    "/auth/login",
+    {
+      method: "POST",
+
+      body: {
+        employee_id:
+          employeeId,
+        password,
+      },
+
+      auth: false,
+    }
+  );
+}
+
+
+/* =========================================================
+   CURRENT BACKEND PROFILE
+========================================================= */
+
+export async function getMyProfile() {
+  return apiRequest(
+    "/auth/me",
+    {
+      auth: true,
+    }
+  );
+}
+
+
+/* =========================================================
+   HEALTH CHECK
+
+   Useful later for showing backend connection status.
+========================================================= */
+
+export async function checkBackendHealth() {
+  return apiRequest(
+    "/health"
+  );
+}
+
+============================================================
+FILE: C:\Users\Annwesh\SurgiTrack-git\frontend\src\utils\demoStore.js
+============================================================
+
+const CURRENT_USER_KEY =
+  "surgitrack_current_user";
+
+const AUTH_TOKEN_KEY =
+  "surgitrack_auth_token";
+
+
+/* =========================================================
+   INTERNAL STORAGE
+========================================================= */
+
+function read(
+  key,
+  fallback
+) {
+  try {
+    const raw =
+      localStorage.getItem(
+        key
+      );
+
+    if (!raw) {
+      return fallback;
+    }
+
+    return JSON.parse(
+      raw
+    );
+  } catch (error) {
+    console.error(
+      "SurgiTrack storage read error:",
+      error
+    );
+
+    return fallback;
+  }
+}
+
+
+function write(
+  key,
+  value
+) {
+  localStorage.setItem(
+    key,
+    JSON.stringify(
+      value
+    )
+  );
+}
+
+
+function normalize(
+  value
+) {
+  return String(
+    value || ""
+  )
+    .trim()
+    .toLowerCase()
+    .replace(
+      /[^a-z0-9_-]/g,
+      "_"
+    );
+}
+
+
+/* =========================================================
+   AUTH TOKEN
+========================================================= */
+
+export function saveAuthToken(
+  token
+) {
+  if (!token) {
+    return;
+  }
+
+  localStorage.setItem(
+    AUTH_TOKEN_KEY,
+    token
+  );
+}
+
+
+export function getAuthToken() {
+  return (
+    localStorage.getItem(
+      AUTH_TOKEN_KEY
+    ) || ""
+  );
+}
+
+
+export function clearAuthToken() {
+  localStorage.removeItem(
+    AUTH_TOKEN_KEY
+  );
+}
+
+
+/* =========================================================
+   CURRENT USER
+========================================================= */
+
+export function getCurrentUser() {
+  return read(
+    CURRENT_USER_KEY,
+    {
+      name: "User",
+      employeeId: "",
+      role: "",
+    }
+  );
+}
+
+
+export function saveCurrentUser(
+  user
+) {
+  const cleaned = {
+    name:
+      String(
+        user?.name || ""
+      ).trim(),
+
+    employeeId:
+      String(
+        user?.employeeId ||
+          user?.employee_id ||
+          ""
+      )
+        .trim()
+        .toUpperCase(),
+
+    role:
+      String(
+        user?.role || ""
+      ).trim(),
+
+    email:
+      user?.email
+        ? String(
+            user.email
+          ).trim()
+        : "",
+  };
+
+  write(
+    CURRENT_USER_KEY,
+    cleaned
+  );
+
+  return cleaned;
+}
+
+
+export function clearCurrentUser() {
+  /*
+   * Logging out removes:
+   *
+   * - logged in frontend profile
+   * - JWT access token
+   *
+   * Employee procedure history is preserved.
+   */
+
+  localStorage.removeItem(
+    CURRENT_USER_KEY
+  );
+
+  clearAuthToken();
+}
+
+
+/* =========================================================
+   EMPLOYEE DATA NAMESPACE
+
+   Until procedure/history endpoints are moved to FastAPI,
+   the logged-in Employee ID keeps each user's frontend
+   procedure/history data isolated.
+========================================================= */
+
+function getEmployeeStorageId() {
+  const user =
+    getCurrentUser();
+
+  const employeeId =
+    normalize(
+      user.employeeId
+    );
+
+  if (employeeId) {
+    return employeeId;
+  }
+
+  return (
+    normalize(
+      user.name
+    ) ||
+    "anonymous"
+  );
+}
+
+
+function employeeKey(
+  suffix
+) {
+  return (
+    `surgitrack_` +
+    `${getEmployeeStorageId()}_` +
+    suffix
+  );
+}
+
+
+/* =========================================================
+   ACTIVE PROCEDURE
+========================================================= */
+
+export function getCurrentProcedure() {
+  return read(
+    employeeKey(
+      "active_procedure"
+    ),
+    null
+  );
+}
+
+
+export function saveCurrentProcedure(
+  procedure
+) {
+  const record = {
+    ...procedure,
+
+    createdAt:
+      procedure?.createdAt ||
+      new Date().toISOString(),
+  };
+
+  write(
+    employeeKey(
+      "active_procedure"
+    ),
+    record
+  );
+
+  return record;
+}
+
+
+export function clearCurrentProcedure() {
+  localStorage.removeItem(
+    employeeKey(
+      "active_procedure"
+    )
+  );
+}
+
+
+/* =========================================================
+   RFID
+========================================================= */
+
+export function getRfidScans() {
+  return read(
+    employeeKey(
+      "rfid_scans"
+    ),
+    []
+  );
+}
+
+
+export function addRfidScan(
+  scan
+) {
+  const current =
+    getRfidScans();
+
+  const duplicate =
+    current.some(
+      (item) =>
+        item.uid ===
+        scan.uid
+    );
+
+  if (duplicate) {
+    return {
+      added: false,
+      scans: current,
+    };
+  }
+
+  const updated = [
+    ...current,
+    scan,
+  ];
+
+  write(
+    employeeKey(
+      "rfid_scans"
+    ),
+    updated
+  );
+
+  return {
+    added: true,
+    scans: updated,
+  };
+}
+
+
+export function removeRfidScan(
+  uid
+) {
+  const updated =
+    getRfidScans().filter(
+      (item) =>
+        item.uid !== uid
+    );
+
+  write(
+    employeeKey(
+      "rfid_scans"
+    ),
+    updated
+  );
+
+  return updated;
+}
+
+
+export function clearRfidScans() {
+  localStorage.removeItem(
+    employeeKey(
+      "rfid_scans"
+    )
+  );
+}
+
+
+/* =========================================================
+   VISION STATUS
+========================================================= */
+
+export function getVisionStatus() {
+  return read(
+    employeeKey(
+      "vision_status"
+    ),
+    {
+      preOpCaptured: false,
+      postOpCaptured: false,
+
+      preOpCapturedAt:
+        null,
+
+      postOpCapturedAt:
+        null,
+    }
+  );
+}
+
+
+export function setPreOpCaptured(
+  captured = true
+) {
+  const current =
+    getVisionStatus();
+
+  const updated = {
+    ...current,
+
+    preOpCaptured:
+      captured,
+
+    preOpCapturedAt:
+      captured
+        ? new Date().toISOString()
+        : null,
+  };
+
+  write(
+    employeeKey(
+      "vision_status"
+    ),
+    updated
+  );
+
+  return updated;
+}
+
+
+export function setPostOpCaptured(
+  captured = true
+) {
+  const current =
+    getVisionStatus();
+
+  const updated = {
+    ...current,
+
+    postOpCaptured:
+      captured,
+
+    postOpCapturedAt:
+      captured
+        ? new Date().toISOString()
+        : null,
+  };
+
+  write(
+    employeeKey(
+      "vision_status"
+    ),
+    updated
+  );
+
+  return updated;
+}
+
+
+export function clearVisionStatus() {
+  localStorage.removeItem(
+    employeeKey(
+      "vision_status"
+    )
+  );
+}
+
+
+/* =========================================================
+   PROCEDURE HISTORY
+========================================================= */
+
+export function getProcedureHistory() {
+  return read(
+    employeeKey(
+      "procedure_history"
+    ),
+    []
+  );
+}
+
+
+function saveProcedureHistory(
+  history
+) {
+  write(
+    employeeKey(
+      "procedure_history"
+    ),
+    history
+  );
+
+  return history;
+}
+
+
+/* =========================================================
+   ARCHIVE PROCEDURE
+========================================================= */
+
+export function archiveCurrentProcedure() {
+  const user =
+    getCurrentUser();
+
+  const procedure =
+    getCurrentProcedure();
+
+  const scans =
+    getRfidScans();
+
+  const vision =
+    getVisionStatus();
+
+  if (!procedure) {
+    return null;
+  }
+
+  const completedAt =
+    new Date().toISOString();
+
+  const archiveRecord = {
+    historyId:
+      `SURGI-${Date.now()}`,
+
+    caseId:
+      procedure.caseId,
+
+    procedureName:
+      procedure.procedureName,
+
+    otRoom:
+      procedure.otRoom,
+
+    surgeon:
+      procedure.surgeon,
+
+    startedAt:
+      procedure.createdAt,
+
+    completedAt,
+
+    status:
+      "Completed",
+
+    attendedBy: {
+      name:
+        user.name,
+
+      employeeId:
+        user.employeeId,
+
+      role:
+        user.role,
+    },
+
+    rfidScans:
+      scans.map(
+        (scan) => ({
+          ...scan,
+        })
+      ),
+
+    instrumentCount:
+      scans.length,
+
+    vision: {
+      preOpCaptured:
+        Boolean(
+          vision.preOpCaptured
+        ),
+
+      postOpCaptured:
+        Boolean(
+          vision.postOpCaptured
+        ),
+
+      preOpCapturedAt:
+        vision.preOpCapturedAt ||
+        null,
+
+      postOpCapturedAt:
+        vision.postOpCapturedAt ||
+        null,
+    },
+
+    visionReconciliation:
+      "Pending",
+  };
+
+  const history =
+    getProcedureHistory();
+
+  const updatedHistory = [
+    archiveRecord,
+    ...history,
+  ];
+
+  saveProcedureHistory(
+    updatedHistory
+  );
+
+  /*
+   * Move completed workflow out of active state.
+   */
+
+  clearActiveProcedureState();
+
+  return archiveRecord;
+}
+
+
+/* =========================================================
+   CLEAR ACTIVE WORKFLOW
+
+   User history remains untouched.
+========================================================= */
+
+export function clearActiveProcedureState() {
+  clearCurrentProcedure();
+
+  clearRfidScans();
+
+  clearVisionStatus();
+}
+
+================ PUBLIC FILES ================
+
+C:\Users\Annwesh\SurgiTrack-git\frontend\public\doctors-bg.jpg
+C:\Users\Annwesh\SurgiTrack-git\frontend\public\favicon.svg
+C:\Users\Annwesh\SurgiTrack-git\frontend\public\hospital-bg.jpg
+C:\Users\Annwesh\SurgiTrack-git\frontend\public\icons.svg

@@ -5,11 +5,6 @@ import {
 } from "react";
 
 import {
-  AnimatePresence,
-  motion,
-} from "framer-motion";
-
-import {
   useNavigate,
 } from "react-router-dom";
 
@@ -17,36 +12,146 @@ import {
   ArrowLeft,
   ArrowRight,
   Camera,
-  CameraOff,
   CheckCircle2,
-  Eye,
+  ImagePlus,
   LoaderCircle,
-  RadioTower,
   RefreshCw,
   ScanLine,
-  ShieldCheck,
-  UserRound,
-  Video,
+  Upload,
+  X,
 } from "lucide-react";
 
 import {
+  getProcedure,
+  getProcedureInstruments,
+  updateProcedureStatus,
+  uploadProcedureImage,
+} from "../services/api";
+
+import {
   getCurrentProcedure,
-  getCurrentUser,
-  getRfidScans,
+  getCurrentProcedureId,
   setPreOpCaptured,
 } from "../utils/demoStore";
 
+
+function preOpVisionKey(
+  procedureId
+) {
+  return (
+    `surgitrack_procedure_${procedureId}_preop_vision`
+  );
+}
+
+
+function normalizeVisionResult(
+  response
+) {
+  const result =
+    response?.vision ??
+    response?.result ??
+    response?.cnn ??
+    response ??
+    {};
+
+  return {
+    mode:
+      result?.mode ??
+      "pre_op",
+
+    detections:
+      Array.isArray(
+        result?.detections
+      )
+        ? result.detections
+        : [],
+
+    counts:
+      result?.counts &&
+      typeof result.counts ===
+        "object"
+        ? result.counts
+        : {},
+
+    total:
+      Number(
+        result?.total ??
+          0
+      ),
+
+    candidate_regions:
+      Number(
+        result?.candidate_regions ??
+          0
+      ),
+
+    models_run:
+      Number(
+        result?.models_run ??
+          1
+      ),
+
+    template_mode:
+      Boolean(
+        result?.template_mode
+      ),
+  };
+}
+
+
+function getInstrumentName(
+  item
+) {
+  return (
+    item?.instrument?.name ??
+    item?.instrument_name ??
+    item?.name ??
+    "Instrument"
+  );
+}
+
+
 export default function PreOpScan() {
-  const navigate = useNavigate();
+  const navigate =
+    useNavigate();
 
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const streamRef = useRef(null);
-  const timerRef = useRef(null);
+  const videoRef =
+    useRef(null);
 
-  const user = getCurrentUser();
-  const procedure = getCurrentProcedure();
-  const scans = getRfidScans();
+  const canvasRef =
+    useRef(null);
+
+  const streamRef =
+    useRef(null);
+
+  const fileInputRef =
+    useRef(null);
+
+  const storedProcedure =
+    getCurrentProcedure();
+
+  const procedureId =
+    getCurrentProcedureId() ??
+    storedProcedure?.id ??
+    null;
+
+  const [
+    procedure,
+    setProcedure,
+  ] = useState(
+    storedProcedure ??
+      null
+  );
+
+  const [
+    instruments,
+    setInstruments,
+  ] = useState([]);
+
+  const [
+    loadingPage,
+    setLoadingPage,
+  ] = useState(true);
 
   const [
     cameraActive,
@@ -59,19 +164,123 @@ export default function PreOpScan() {
   ] = useState(false);
 
   const [
-    cameraError,
-    setCameraError,
+    selectedFile,
+    setSelectedFile,
+  ] = useState(null);
+
+  const [
+    previewUrl,
+    setPreviewUrl,
   ] = useState("");
 
   const [
-    scanStatus,
-    setScanStatus,
-  ] = useState("idle");
+    sourceType,
+    setSourceType,
+  ] = useState("");
 
   const [
-    capturedImage,
-    setCapturedImage,
+    analyzing,
+    setAnalyzing,
+  ] = useState(false);
+
+  const [
+    visionResult,
+    setVisionResult,
   ] = useState(null);
+
+  const [
+    error,
+    setError,
+  ] = useState("");
+
+  const [
+    success,
+    setSuccess,
+  ] = useState("");
+
+
+  /* =====================================================
+     LOAD PAGE
+  ===================================================== */
+
+  useEffect(() => {
+    const loadPage =
+      async () => {
+        if (!procedureId) {
+          setError(
+            "No active procedure found."
+          );
+
+          setLoadingPage(
+            false
+          );
+
+          return;
+        }
+
+        try {
+          const [
+            procedureData,
+            instrumentData,
+          ] =
+            await Promise.all([
+              getProcedure(
+                procedureId
+              ),
+
+              getProcedureInstruments(
+                procedureId
+              ),
+            ]);
+
+          setProcedure(
+            procedureData
+          );
+
+          setInstruments(
+            Array.isArray(
+              instrumentData
+            )
+              ? instrumentData
+              : []
+          );
+
+
+          const storedVision =
+            localStorage.getItem(
+              preOpVisionKey(
+                procedureId
+              )
+            );
+
+          if (storedVision) {
+            try {
+              setVisionResult(
+                JSON.parse(
+                  storedVision
+                )
+              );
+            } catch {
+              // Ignore invalid old value.
+            }
+          }
+        } catch (
+          loadError
+        ) {
+          setError(
+            loadError?.message ??
+              "Unable to load pre-op data."
+          );
+        } finally {
+          setLoadingPage(
+            false
+          );
+        }
+      };
+
+    loadPage();
+  }, [procedureId]);
+
 
   /* =====================================================
      CLEANUP
@@ -79,48 +288,50 @@ export default function PreOpScan() {
 
   useEffect(() => {
     return () => {
-      if (timerRef.current) {
-        clearTimeout(
-          timerRef.current
-        );
-      }
-
-      if (streamRef.current) {
-        streamRef.current
-          .getTracks()
-          .forEach((track) =>
-            track.stop()
-          );
-      }
-    };
-  }, []);
-
-  /* =====================================================
-     START CAMERA
-  ===================================================== */
-
-  const startCamera = async () => {
-    setCameraLoading(true);
-    setCameraError("");
-
-    setCapturedImage(null);
-    setScanStatus("idle");
-
-    /*
-     * Starting/restarting the camera means
-     * this scan is not complete yet.
-     */
-
-    setPreOpCaptured(false);
-
-    try {
       if (
         streamRef.current
       ) {
         streamRef.current
           .getTracks()
-          .forEach((track) =>
-            track.stop()
+          .forEach(
+            (track) =>
+              track.stop()
+          );
+      }
+    };
+  }, []);
+
+
+  useEffect(() => {
+    return () => {
+      if (
+        previewUrl &&
+        previewUrl.startsWith(
+          "blob:"
+        )
+      ) {
+        URL.revokeObjectURL(
+          previewUrl
+        );
+      }
+    };
+  }, [previewUrl]);
+
+
+  /* =====================================================
+     CAMERA
+  ===================================================== */
+
+  const stopCamera =
+    () => {
+      if (
+        streamRef.current
+      ) {
+        streamRef.current
+          .getTracks()
+          .forEach(
+            (track) =>
+              track.stop()
           );
 
         streamRef.current =
@@ -128,747 +339,779 @@ export default function PreOpScan() {
       }
 
       if (
-        !navigator.mediaDevices
-          ?.getUserMedia
-      ) {
-        throw new Error(
-          "Camera access requires localhost or HTTPS."
-        );
-      }
-
-      let stream;
-
-      try {
-        stream =
-          await navigator.mediaDevices.getUserMedia(
-            {
-              video: {
-                facingMode: {
-                  ideal:
-                    "environment",
-                },
-
-                width: {
-                  ideal: 1920,
-                },
-
-                height: {
-                  ideal: 1080,
-                },
-              },
-
-              audio: false,
-            }
-          );
-      } catch {
-        stream =
-          await navigator.mediaDevices.getUserMedia(
-            {
-              video: true,
-              audio: false,
-            }
-          );
-      }
-
-      streamRef.current =
-        stream;
-
-      if (
         videoRef.current
       ) {
         videoRef.current.srcObject =
-          stream;
-
-        await videoRef.current.play();
+          null;
       }
 
-      setCameraActive(true);
-    } catch (error) {
-      console.error(
-        "Camera error:",
-        error
+      setCameraActive(
+        false
+      );
+    };
+
+
+  const startCamera =
+    async () => {
+      setCameraLoading(
+        true
       );
 
-      setCameraActive(false);
+      setError("");
 
-      setCameraError(
-        "Unable to access the camera. Allow camera permission and try again."
-      );
-    } finally {
-      setCameraLoading(false);
-    }
-  };
+      try {
+        stopCamera();
 
-  /* =====================================================
-     STOP CAMERA
-  ===================================================== */
+        if (
+          !navigator
+            .mediaDevices
+            ?.getUserMedia
+        ) {
+          throw new Error(
+            "Camera unavailable."
+          );
+        }
 
-  const stopCamera = () => {
-    if (
-      streamRef.current
-    ) {
-      streamRef.current
-        .getTracks()
-        .forEach((track) =>
-          track.stop()
+        let stream;
+
+        try {
+          stream =
+            await navigator.mediaDevices.getUserMedia(
+              {
+                video: {
+                  facingMode: {
+                    ideal:
+                      "environment",
+                  },
+
+                  width: {
+                    ideal:
+                      1920,
+                  },
+
+                  height: {
+                    ideal:
+                      1080,
+                  },
+                },
+
+                audio: false,
+              }
+            );
+        } catch {
+          stream =
+            await navigator.mediaDevices.getUserMedia(
+              {
+                video: true,
+                audio: false,
+              }
+            );
+        }
+
+        streamRef.current =
+          stream;
+
+        if (
+          videoRef.current
+        ) {
+          videoRef.current.srcObject =
+            stream;
+
+          await videoRef.current.play();
+        }
+
+        setCameraActive(
+          true
+        );
+      } catch (
+        cameraError
+      ) {
+        console.error(
+          cameraError
         );
 
-      streamRef.current =
-        null;
-    }
+        setError(
+          "Unable to open camera. Use Upload Image instead."
+        );
+      } finally {
+        setCameraLoading(
+          false
+        );
+      }
+    };
 
-    if (
-      videoRef.current
-    ) {
-      videoRef.current.srcObject =
-        null;
-    }
-
-    setCameraActive(false);
-  };
 
   /* =====================================================
-     CAPTURE FRAME
+     FILE
   ===================================================== */
 
-  const captureFrame = () => {
-    const video =
-      videoRef.current;
+  const applyFile =
+    (
+      file,
+      source
+    ) => {
+      if (!file) {
+        return;
+      }
 
-    const canvas =
-      canvasRef.current;
-
-    if (
-      !video ||
-      !canvas ||
-      !video.videoWidth ||
-      !video.videoHeight
-    ) {
-      return null;
-    }
-
-    canvas.width =
-      video.videoWidth;
-
-    canvas.height =
-      video.videoHeight;
-
-    const context =
-      canvas.getContext("2d");
-
-    context.drawImage(
-      video,
-      0,
-      0,
-      canvas.width,
-      canvas.height
-    );
-
-    return canvas.toDataURL(
-      "image/jpeg",
-      0.92
-    );
-  };
-
-  /* =====================================================
-     SCAN PRE-OP TRAY
-  ===================================================== */
-
-  const scanTray = () => {
-    if (!cameraActive) {
-      return;
-    }
-
-    const frame =
-      captureFrame();
-
-    if (!frame) {
-      setCameraError(
-        "Camera is still starting. Wait a moment and try again."
-      );
-
-      return;
-    }
-
-    setCameraError("");
-    setScanStatus(
-      "scanning"
-    );
-
-    setPreOpCaptured(
-      false
-    );
-
-    if (timerRef.current) {
-      clearTimeout(
-        timerRef.current
-      );
-    }
-
-    timerRef.current =
-      setTimeout(() => {
-        setCapturedImage(
-          frame
+      if (
+        !file.type.startsWith(
+          "image/"
+        )
+      ) {
+        setError(
+          "Please select an image."
         );
 
-        /*
-         * IMPORTANT
-         *
-         * This is what Final Reconciliation
-         * reads later.
-         */
+        return;
+      }
+
+      if (
+        previewUrl &&
+        previewUrl.startsWith(
+          "blob:"
+        )
+      ) {
+        URL.revokeObjectURL(
+          previewUrl
+        );
+      }
+
+      setSelectedFile(
+        file
+      );
+
+      setPreviewUrl(
+        URL.createObjectURL(
+          file
+        )
+      );
+
+      setSourceType(
+        source
+      );
+
+      setVisionResult(
+        null
+      );
+
+      setPreOpCaptured(
+        false
+      );
+
+      localStorage.removeItem(
+        preOpVisionKey(
+          procedureId
+        )
+      );
+
+      setError("");
+      setSuccess("");
+    };
+
+
+  const handleUpload =
+    (
+      event
+    ) => {
+      const file =
+        event.target.files?.[0];
+
+      applyFile(
+        file,
+        "upload"
+      );
+
+      event.target.value =
+        "";
+    };
+
+
+  const captureImage =
+    () => {
+      const video =
+        videoRef.current;
+
+      const canvas =
+        canvasRef.current;
+
+      if (
+        !video ||
+        !canvas ||
+        !video.videoWidth ||
+        !video.videoHeight
+      ) {
+        setError(
+          "Camera is still starting."
+        );
+
+        return;
+      }
+
+      canvas.width =
+        video.videoWidth;
+
+      canvas.height =
+        video.videoHeight;
+
+      const context =
+        canvas.getContext(
+          "2d"
+        );
+
+      context.drawImage(
+        video,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            setError(
+              "Unable to capture image."
+            );
+
+            return;
+          }
+
+          const file =
+            new File(
+              [
+                blob,
+              ],
+              `pre_op_${Date.now()}.jpg`,
+              {
+                type:
+                  "image/jpeg",
+              }
+            );
+
+          applyFile(
+            file,
+            "camera"
+          );
+
+          stopCamera();
+        },
+        "image/jpeg",
+        0.95
+      );
+    };
+
+
+  /* =====================================================
+     ANALYSE
+  ===================================================== */
+
+  const analyzeImage =
+    async () => {
+      if (!selectedFile) {
+        setError(
+          "Upload or capture an image first."
+        );
+
+        return;
+      }
+
+      setAnalyzing(
+        true
+      );
+
+      setError("");
+      setSuccess("");
+
+      try {
+        const response =
+          await uploadProcedureImage(
+            procedureId,
+            "pre_op",
+            selectedFile
+          );
+
+        const result =
+          normalizeVisionResult(
+            response
+          );
+
+        setVisionResult(
+          result
+        );
+
+        localStorage.setItem(
+          preOpVisionKey(
+            procedureId
+          ),
+          JSON.stringify(
+            result
+          )
+        );
 
         setPreOpCaptured(
           true
         );
 
-        setScanStatus(
-          "complete"
+        setSuccess(
+          "Pre-op reference baseline saved."
         );
-      }, 2000);
-  };
+      } catch (
+        analyzeError
+      ) {
+        console.error(
+          analyzeError
+        );
+
+        setPreOpCaptured(
+          false
+        );
+
+        setError(
+          analyzeError?.message ??
+            "Pre-op scan failed."
+        );
+      } finally {
+        setAnalyzing(
+          false
+        );
+      }
+    };
+
+
+  const resetImage =
+    () => {
+      stopCamera();
+
+      setSelectedFile(
+        null
+      );
+
+      setPreviewUrl(
+        ""
+      );
+
+      setSourceType(
+        ""
+      );
+
+      setVisionResult(
+        null
+      );
+
+      setPreOpCaptured(
+        false
+      );
+
+      localStorage.removeItem(
+        preOpVisionKey(
+          procedureId
+        )
+      );
+
+      setError("");
+      setSuccess("");
+    };
+
 
   /* =====================================================
-     RESCAN
+     CONTINUE
   ===================================================== */
-
-  const rescanTray = () => {
-    setPreOpCaptured(
-      false
-    );
-
-    setCapturedImage(
-      null
-    );
-
-    setScanStatus(
-      "idle"
-    );
-
-    setCameraError("");
-  };
-
-  /* =====================================================
-     NAVIGATION
-  ===================================================== */
-
-  const goBack = () => {
-    stopCamera();
-
-    navigate(
-      "/rfid-registration"
-    );
-  };
 
   const continueToProcedure =
-    () => {
-      if (
-        scanStatus !==
-        "complete"
-      ) {
+    async () => {
+      if (!visionResult) {
+        setError(
+          "Run the pre-op scan first."
+        );
+
         return;
       }
 
-      stopCamera();
+      try {
+        await updateProcedureStatus(
+          procedureId,
+          "active"
+        );
+      } catch (
+        statusError
+      ) {
+        console.warn(
+          statusError
+        );
+      }
 
       navigate(
         "/procedure-active"
       );
     };
 
-  return (
-    <div className="relative min-h-screen overflow-hidden bg-[#F5F0E8] text-[#2D2A26]">
 
-      {/* BACKGROUND */}
-
-      <div className="pointer-events-none fixed inset-0">
-
-        <motion.div
-          animate={{
-            scale: [
-              1.03,
-              1.07,
-              1.03,
-            ],
-          }}
-          transition={{
-            duration: 24,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-          className="absolute inset-0 bg-[url('/doctors-bg.jpg')] bg-cover bg-center"
-          style={{
-            opacity: 0.15,
-          }}
-        />
-
-        <div className="absolute inset-0 bg-gradient-to-r from-[#F5F0E8]/98 via-[#F5F0E8]/91 to-[#F5F0E8]/61" />
-
+  if (loadingPage) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#F5F0E8]">
+        <LoaderCircle className="h-9 w-9 animate-spin text-[#826B4E]" />
       </div>
+    );
+  }
 
-      {/* HEADER */}
 
-      <header className="relative z-40 border-b border-[#DED5CA] bg-[#FAF7F2]/82 backdrop-blur-2xl">
+  return (
+    <div className="min-h-screen bg-[#F5F0E8] px-5 py-6 text-[#2D2A26] sm:px-8">
+      <div className="mx-auto max-w-7xl">
 
-        <div className="mx-auto flex h-[78px] max-w-[1600px] items-center justify-between px-6 lg:px-10">
+        <div className="mb-7 flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-bold uppercase tracking-[0.2em] text-[#9A8160]">
+              SurgiTrack
+            </p>
 
-          <div className="flex items-center gap-4">
+            <h1 className="mt-1 text-3xl font-black">
+              Pre-Op Reference Scan
+            </h1>
 
-            <motion.button
-              whileHover={{
-                x: -3,
-              }}
-              onClick={goBack}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#DDD2C5] bg-[#FFFDF9] text-[#897D72]"
-            >
+            <p className="mt-2 text-sm text-[#7B7166]">
+              {procedure?.procedure_name ??
+                "Current Procedure"}
+            </p>
+          </div>
 
-              <ArrowLeft className="h-4 w-4" />
+          <button
+            onClick={() =>
+              navigate(
+                "/rfid-registration"
+              )
+            }
+            className="flex items-center gap-2 rounded-xl border border-[#D8CCBD] bg-white px-4 py-3 font-bold"
+          >
+            <ArrowLeft size={18} />
+            Back
+          </button>
+        </div>
 
-            </motion.button>
 
-            <div className="flex items-center gap-3">
+        <div className="mb-6 rounded-3xl border border-[#E3D9CC] bg-white p-5 shadow-sm">
+          <h2 className="mb-3 text-lg font-bold">
+            RFID Registered Instruments
+          </h2>
 
-              <div className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-[#D4C5B3] bg-[#FFFDF9]">
-
-                <Camera className="h-5 w-5 text-[#9A724A]" />
-
+          <div className="flex flex-wrap gap-2">
+            {instruments.map(
+              (
+                instrument,
+                index
+              ) => (
                 <span
-                  className={`absolute -right-1 -top-1 h-2.5 w-2.5 rounded-full ${
-                    cameraActive
-                      ? "animate-pulse bg-[#789477]"
-                      : "bg-[#BDB3A8]"
-                  }`}
+                  key={
+                    instrument?.id ??
+                    instrument?.instrument_rfid_uid ??
+                    index
+                  }
+                  className="rounded-full bg-[#F2ECE3] px-4 py-2 text-sm font-bold"
+                >
+                  {getInstrumentName(
+                    instrument
+                  )}
+                </span>
+              )
+            )}
+          </div>
+        </div>
+
+
+        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+
+          <div className="rounded-3xl border border-[#E3D9CC] bg-white p-5 shadow-sm">
+
+            <h2 className="text-xl font-bold">
+              Reference Tray
+            </h2>
+
+            <p className="mb-5 mt-1 text-sm text-[#82786D]">
+              Upload the reference tray image or capture it with the camera.
+            </p>
+
+
+            {cameraActive &&
+              !previewUrl && (
+                <div className="overflow-hidden rounded-2xl bg-black">
+                  <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="aspect-video w-full object-contain"
+                  />
+                </div>
+              )}
+
+
+            {previewUrl && (
+              <div className="relative overflow-hidden rounded-2xl bg-[#EEEAE3]">
+                <img
+                  src={previewUrl}
+                  alt="Pre-op tray"
+                  className="max-h-[600px] w-full object-contain"
                 />
 
+                <button
+                  onClick={
+                    resetImage
+                  }
+                  className="absolute right-3 top-3 rounded-full bg-black/70 p-2 text-white"
+                >
+                  <X size={18} />
+                </button>
               </div>
+            )}
 
-              <div>
 
-                <div className="text-sm font-semibold tracking-[0.14em]">
-                  SURGITRACK
-                </div>
-
-                <div className="text-[10px] text-[#9D9287]">
-                  PRE-OPERATIVE VISION
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-
-          <div className="hidden items-center gap-3 sm:flex">
-
-            <div className="text-right">
-
-              <div className="text-sm font-medium">
-                {user.name}
-              </div>
-
-              <div className="text-[11px] text-[#968C82]">
-                {user.employeeId} · {user.role}
-              </div>
-
-            </div>
-
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#D2C3B1] bg-[#F6EEE4]">
-
-              <UserRound className="h-4 w-4 text-[#9A724A]" />
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </header>
-
-      {/* MAIN */}
-
-      <main className="relative z-10 mx-auto max-w-[1500px] px-5 py-9 lg:px-8">
-
-        <div className="mb-7">
-
-          <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#9A724A]">
-
-            <Eye className="h-4 w-4" />
-
-            Live Computer Vision
-
-          </div>
-
-          <h1 className="text-3xl font-semibold tracking-[-0.035em] lg:text-4xl">
-
-            Pre-operative tray scan
-
-          </h1>
-
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-[#877D73]">
-
-            Position the complete prepared surgical tray inside
-            the live camera frame.
-
-          </p>
-
-        </div>
-
-        {/* STATUS */}
-
-        <div className="mb-6 flex flex-wrap gap-3">
-
-          <StatusBox
-            icon={
-              RadioTower
-            }
-            label={`${scans.length} RFID tags`}
-          />
-
-          <StatusBox
-            icon={
-              cameraActive
-                ? Video
-                : CameraOff
-            }
-            label={
-              cameraActive
-                ? "Camera Live"
-                : "Camera Offline"
-            }
-          />
-
-          <StatusBox
-            icon={
-              ShieldCheck
-            }
-            label={
-              procedure?.caseId ||
-              "No active case"
-            }
-          />
-
-        </div>
-
-        <div className="grid gap-6 xl:grid-cols-[1.35fr_.65fr]">
-
-          {/* CAMERA */}
-
-          <section className="overflow-hidden rounded-[28px] border border-[#D9CDBF] bg-[#FFFDF9]/88 shadow-[0_20px_55px_rgba(80,62,42,.07)]">
-
-            <div className="flex items-center justify-between border-b border-[#E8E0D7] px-6 py-5">
-
-              <div>
-
-                <h2 className="font-semibold">
-                  Live tray camera
-                </h2>
-
-                <p className="mt-1 text-xs text-[#958B81]">
-                  Pre-operative baseline
-                </p>
-
-              </div>
-
-              <div
-                className={`rounded-full border px-3 py-1.5 text-[10px] font-semibold ${
-                  cameraActive
-                    ? "border-[#C7D2C1] bg-[#F4F8F1] text-[#698067]"
-                    : "border-[#DDD3C7] bg-[#F6F1EB] text-[#998E84]"
-                }`}
-              >
-
-                {cameraActive
-                  ? "LIVE"
-                  : "OFFLINE"}
-
-              </div>
-
-            </div>
-
-            <div className="p-6">
-
-              <div className="relative min-h-[540px] overflow-hidden rounded-[26px] bg-[#292622]">
-
-                <video
-                  ref={videoRef}
-                  autoPlay
-                  muted
-                  playsInline
-                  className={`absolute inset-0 h-full w-full object-cover ${
-                    cameraActive &&
-                    !capturedImage
-                      ? "opacity-100"
-                      : "opacity-0"
-                  }`}
-                />
-
-                {capturedImage && (
-
-                  <img
-                    src={
-                      capturedImage
-                    }
-                    alt="Pre-op tray"
-                    className="absolute inset-0 h-full w-full object-cover"
+            {!cameraActive &&
+              !previewUrl && (
+                <div className="flex min-h-[360px] flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#D7C9B8] bg-[#FAF8F4]">
+                  <ImagePlus
+                    size={50}
+                    className="mb-3 text-[#A58A66]"
                   />
 
-                )}
-
-                <canvas
-                  ref={canvasRef}
-                  className="hidden"
-                />
-
-                {!cameraActive &&
-                  !cameraLoading && (
-
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-
-                    <Camera className="h-10 w-10 text-[#D8BA98]" />
-
-                    <div className="mt-5 text-lg font-semibold text-white">
-                      Start live camera
-                    </div>
-
-                    <button
-                      onClick={
-                        startCamera
-                      }
-                      className="mt-6 rounded-xl bg-[#B88A5B] px-6 py-3 text-sm font-semibold text-white"
-                    >
-                      Start Camera
-                    </button>
-
-                  </div>
-
-                )}
-
-                {cameraLoading && (
-
-                  <div className="absolute inset-0 flex items-center justify-center">
-
-                    <LoaderCircle className="h-8 w-8 animate-spin text-[#D7B58F]" />
-
-                  </div>
-
-                )}
-
-                <AnimatePresence>
-
-                  {scanStatus ===
-                    "scanning" && (
-
-                    <motion.div
-                      initial={{
-                        opacity: 0,
-                      }}
-                      animate={{
-                        opacity: 1,
-                      }}
-                      exit={{
-                        opacity: 0,
-                      }}
-                      className="absolute inset-0 bg-black/25"
-                    >
-
-                      <motion.div
-                        initial={{
-                          top: "8%",
-                        }}
-                        animate={{
-                          top: "90%",
-                        }}
-                        transition={{
-                          duration: 1.8,
-                        }}
-                        className="absolute left-[5%] right-[5%] h-[2px] bg-[#EAC59E]"
-                      />
-
-                      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-black/65 px-8 py-6 text-center text-white">
-
-                        <LoaderCircle className="mx-auto h-6 w-6 animate-spin" />
-
-                        <div className="mt-3 text-sm font-semibold">
-                          Scanning tray
-                        </div>
-
-                      </div>
-
-                    </motion.div>
-
-                  )}
-
-                </AnimatePresence>
-
-                {scanStatus ===
-                  "complete" && (
-
-                  <div className="absolute right-5 top-5 flex items-center gap-2 rounded-full bg-[#F4FAF1] px-4 py-2 text-[10px] font-semibold text-[#668064]">
-
-                    <CheckCircle2 className="h-4 w-4" />
-
-                    PRE-OP READY
-
-                  </div>
-
-                )}
-
-              </div>
-
-              {cameraError && (
-
-                <div className="mt-4 rounded-xl bg-[#FBF0ED] px-4 py-3 text-xs text-[#A15E54]">
-                  {cameraError}
+                  <p className="font-bold">
+                    Select the pre-op tray image
+                  </p>
                 </div>
-
               )}
 
-              <div className="mt-5">
 
-                {scanStatus ===
-                "complete" ? (
+            <canvas
+              ref={canvasRef}
+              className="hidden"
+            />
 
-                  <button
-                    onClick={
-                      rescanTray
-                    }
-                    className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#D2C4B5] bg-[#F7F1EA] text-sm font-semibold"
-                  >
 
-                    <RefreshCw className="h-4 w-4" />
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
 
-                    Rescan Tray
+              {!cameraActive ? (
+                <button
+                  onClick={
+                    startCamera
+                  }
+                  disabled={
+                    cameraLoading ||
+                    analyzing
+                  }
+                  className="flex items-center justify-center gap-2 rounded-xl bg-[#2D2A26] px-4 py-3 font-bold text-white disabled:opacity-40"
+                >
+                  {cameraLoading ? (
+                    <LoaderCircle className="animate-spin" size={18} />
+                  ) : (
+                    <Camera size={18} />
+                  )}
 
-                  </button>
+                  Open Camera
+                </button>
+              ) : (
+                <button
+                  onClick={
+                    captureImage
+                  }
+                  className="flex items-center justify-center gap-2 rounded-xl bg-[#2D2A26] px-4 py-3 font-bold text-white"
+                >
+                  <Camera size={18} />
+                  Capture
+                </button>
+              )}
 
-                ) : (
 
-                  <button
-                    onClick={
-                      scanTray
-                    }
-                    disabled={
-                      !cameraActive ||
-                      scanStatus ===
-                        "scanning"
-                    }
-                    className={`flex h-12 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold ${
-                      cameraActive &&
-                      scanStatus !==
-                        "scanning"
-                        ? "bg-[#A27A53] text-white"
-                        : "cursor-not-allowed bg-[#E5DDD4] text-[#AAA096]"
-                    }`}
-                  >
+              <button
+                onClick={() =>
+                  fileInputRef.current?.click()
+                }
+                disabled={
+                  analyzing
+                }
+                className="flex items-center justify-center gap-2 rounded-xl border border-[#CCBCA7] bg-[#F6EFE5] px-4 py-3 font-bold"
+              >
+                <Upload size={18} />
+                Upload Image
+              </button>
 
-                    <ScanLine className="h-4 w-4" />
 
-                    {scanStatus ===
-                    "scanning"
-                      ? "Scanning..."
-                      : "Scan Tray"}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={
+                  handleUpload
+                }
+                className="hidden"
+              />
 
-                  </button>
 
-                )}
+              {selectedFile && (
+                <button
+                  onClick={
+                    analyzeImage
+                  }
+                  disabled={
+                    analyzing
+                  }
+                  className="flex items-center justify-center gap-2 rounded-xl bg-[#826A4B] px-4 py-3 font-bold text-white disabled:opacity-40 sm:col-span-2"
+                >
+                  {analyzing ? (
+                    <>
+                      <LoaderCircle className="animate-spin" size={18} />
+                      Analysing...
+                    </>
+                  ) : (
+                    <>
+                      <ScanLine size={18} />
+                      Set Pre-Op Baseline
+                    </>
+                  )}
+                </button>
+              )}
 
-              </div>
+
+              {selectedFile && (
+                <button
+                  onClick={
+                    resetImage
+                  }
+                  disabled={
+                    analyzing
+                  }
+                  className="flex items-center justify-center gap-2 rounded-xl border border-[#D8CCBD] px-4 py-3 font-bold sm:col-span-2"
+                >
+                  <RefreshCw size={18} />
+                  Choose Another Image
+                </button>
+              )}
 
             </div>
 
-          </section>
+            {sourceType && (
+              <p className="mt-3 text-xs font-bold uppercase tracking-wider text-[#94826B]">
+                Source: {sourceType}
+              </p>
+            )}
+          </div>
 
-          {/* RIGHT */}
 
-          <div className="space-y-6">
+          <div className="space-y-5">
 
-            <section className="rounded-[28px] border border-[#DED3C6] bg-[#FFFDF9]/88 p-6">
+            <div className="rounded-3xl border border-[#E3D9CC] bg-white p-5 shadow-sm">
+              <h2 className="text-xl font-bold">
+                Pre-Op Baseline
+              </h2>
 
-              <div className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#98704A]">
-                Pre-Op Status
-              </div>
-
-              {scanStatus ===
-              "complete" ? (
-
-                <div className="mt-6 rounded-2xl border border-[#C4D4BE] bg-[#F2F8EF] p-5">
-
-                  <CheckCircle2 className="h-6 w-6 text-[#70896E]" />
-
-                  <div className="mt-3 text-sm font-semibold">
-                    Baseline captured
-                  </div>
-
-                  <div className="mt-2 text-xs text-[#788876]">
-                    Pre-operative acquisition is complete.
-                  </div>
-
-                </div>
-
+              {!visionResult ? (
+                <p className="mt-3 text-sm text-[#82786D]">
+                  Upload the supplied reference image and set the baseline.
+                </p>
               ) : (
+                <>
+                  <div className="mt-5 grid grid-cols-3 gap-3">
+                    <Metric
+                      label="Regions"
+                      value={
+                        visionResult.candidate_regions
+                      }
+                    />
 
-                <div className="mt-6 rounded-2xl border border-dashed border-[#DDD2C5] p-6 text-center text-sm">
-                  Awaiting tray scan
-                </div>
+                    <Metric
+                      label="Detected"
+                      value={
+                        visionResult.total
+                      }
+                    />
 
+                    <Metric
+                      label="Models"
+                      value={
+                        visionResult.models_run
+                      }
+                    />
+                  </div>
+
+                  <div className="mt-5 space-y-3">
+                    {Object.entries(
+                      visionResult.counts
+                    ).map(
+                      ([
+                        name,
+                        count,
+                      ]) => (
+                        <div
+                          key={
+                            name
+                          }
+                          className="flex items-center justify-between rounded-xl bg-[#F6F2EC] px-4 py-3"
+                        >
+                          <span className="font-bold">
+                            {name}
+                          </span>
+
+                          <span className="text-xl font-black">
+                            {count}
+                          </span>
+                        </div>
+                      )
+                    )}
+                  </div>
+                </>
               )}
+            </div>
 
-            </section>
+
+            {success && (
+              <div className="flex gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 font-semibold text-emerald-700">
+                <CheckCircle2 size={21} />
+                {success}
+              </div>
+            )}
+
+
+            {error && (
+              <div className="rounded-2xl border border-red-200 bg-red-50 p-4 font-semibold text-red-700">
+                {error}
+              </div>
+            )}
+
 
             <button
               onClick={
                 continueToProcedure
               }
               disabled={
-                scanStatus !==
-                "complete"
+                !visionResult ||
+                analyzing
               }
-              className={`flex h-14 w-full items-center justify-center gap-3 rounded-2xl text-sm font-semibold ${
-                scanStatus ===
-                "complete"
-                  ? "bg-[#A27A53] text-white"
-                  : "cursor-not-allowed bg-[#E6DED5] text-[#AAA096]"
-              }`}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#2D2A26] px-5 py-4 font-bold text-white disabled:opacity-40"
             >
-
-              Continue to Procedure
-
-              <ArrowRight className="h-4 w-4" />
-
-            </button>
-
-            <button
-              onClick={goBack}
-              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-[#D7CCBF] bg-[#FFFDF9]"
-            >
-
-              <ArrowLeft className="h-4 w-4" />
-
-              Back to RFID
-
+              Start Procedure
+              <ArrowRight size={19} />
             </button>
 
           </div>
-
         </div>
-
-      </main>
-
+      </div>
     </div>
   );
 }
 
-function StatusBox({
-  icon: Icon,
+
+function Metric({
   label,
+  value,
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-[#DED4C8] bg-[#FFFDF9]/82 px-4 py-2 text-xs">
+    <div className="rounded-2xl bg-[#F4EFE7] p-4 text-center">
+      <p className="text-2xl font-black">
+        {value}
+      </p>
 
-      <Icon className="h-4 w-4 text-[#9A724A]" />
-
-      {label}
-
+      <p className="mt-1 text-xs font-bold uppercase text-[#81766A]">
+        {label}
+      </p>
     </div>
   );
 }

@@ -16,35 +16,26 @@ import {
   BadgeCheck,
   Eye,
   EyeOff,
+  LoaderCircle,
   LockKeyhole,
   RadioTower,
   ScanLine,
   ShieldCheck,
-  UserRound,
 } from "lucide-react";
 
 import {
+  loginUser,
+} from "../services/api";
+
+import {
+  saveAuthToken,
   saveCurrentUser,
 } from "../utils/demoStore";
 
-const roles = [
-  "OT Technician",
-  "Surgeon / Doctor",
-  "Anaesthesiologist",
-  "Scrub Nurse",
-  "Circulating Nurse",
-  "Theatre Nurse",
-  "Administrator",
-];
 
 export default function Login() {
   const navigate =
     useNavigate();
-
-  const [
-    name,
-    setName,
-  ] = useState("");
 
   const [
     employeeId,
@@ -57,15 +48,13 @@ export default function Login() {
   ] = useState("");
 
   const [
-    role,
-    setRole,
-  ] = useState(
-    "OT Technician"
-  );
-
-  const [
     showPassword,
     setShowPassword,
+  ] = useState(false);
+
+  const [
+    loading,
+    setLoading,
   ] = useState(false);
 
   const [
@@ -73,60 +62,123 @@ export default function Login() {
     setError,
   ] = useState("");
 
-  const handleSubmit = (
-    event
-  ) => {
-    event.preventDefault();
 
-    const cleanName =
-      name.trim();
+  /* =====================================================
+     LOGIN
+  ===================================================== */
 
-    const cleanEmployeeId =
-      employeeId.trim();
+  const handleSubmit =
+    async (
+      event
+    ) => {
+      event.preventDefault();
 
-    if (!cleanName) {
-      setError(
-        "Enter your name."
-      );
-
-      return;
-    }
-
-    if (!cleanEmployeeId) {
-      setError(
-        "Enter your Employee ID."
-      );
-
-      return;
-    }
-
-    if (!password.trim()) {
-      setError(
-        "Enter your password."
-      );
-
-      return;
-    }
-
-    setError("");
-
-    saveCurrentUser({
-      name:
-        cleanName,
-
-      employeeId:
-        cleanEmployeeId,
-
-      role,
-    });
-
-    navigate(
-      "/dashboard",
-      {
-        replace: true,
+      if (loading) {
+        return;
       }
-    );
-  };
+
+      const cleanEmployeeId =
+        employeeId
+          .trim()
+          .toUpperCase();
+
+      if (!cleanEmployeeId) {
+        setError(
+          "Enter your Employee ID."
+        );
+
+        return;
+      }
+
+      if (!password) {
+        setError(
+          "Enter your password."
+        );
+
+        return;
+      }
+
+      setLoading(true);
+      setError("");
+
+      try {
+        /*
+         * FastAPI:
+         *
+         * POST /auth/login
+         */
+
+        const result =
+          await loginUser(
+            cleanEmployeeId,
+            password
+          );
+
+        if (
+          !result?.access_token ||
+          !result?.user
+        ) {
+          throw new Error(
+            "Invalid authentication response."
+          );
+        }
+
+        /*
+         * Save JWT.
+         */
+
+        saveAuthToken(
+          result.access_token
+        );
+
+        /*
+         * IMPORTANT:
+         *
+         * Name and role are NOT taken
+         * from the login form.
+         *
+         * They come from SQLite through
+         * FastAPI.
+         */
+
+        saveCurrentUser({
+          name:
+            result.user.name,
+
+          employeeId:
+            result.user
+              .employee_id,
+
+          role:
+            result.user.role,
+
+          email:
+            result.user.email,
+        });
+
+        navigate(
+          "/dashboard",
+          {
+            replace: true,
+          }
+        );
+      } catch (
+        loginError
+      ) {
+        console.error(
+          "Login failed:",
+          loginError
+        );
+
+        setError(
+          loginError.message ||
+            "Unable to sign in."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-[#F5F0E8] text-[#2B2925]">
@@ -144,6 +196,12 @@ export default function Login() {
               1.03,
               1.08,
               1.03,
+            ],
+
+            x: [
+              0,
+              -10,
+              0,
             ],
           }}
           transition={{
@@ -164,15 +222,50 @@ export default function Login() {
 
         <div className="absolute inset-0 bg-gradient-to-b from-[#F5F0E8]/15 via-transparent to-[#F5F0E8]/62" />
 
+        <motion.div
+          animate={{
+            x: [
+              0,
+              50,
+              -20,
+              0,
+            ],
+
+            y: [
+              0,
+              20,
+              -15,
+              0,
+            ],
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          className="absolute -left-36 -top-32 h-[30rem] w-[30rem] rounded-full bg-[#DCC7AE]/35 blur-[110px]"
+        />
+
       </div>
+
 
       {/* HEADER */}
 
       <header className="relative z-20 flex min-h-[82px] items-center justify-between px-6 py-5 lg:px-14">
 
-        <div className="flex items-center gap-3">
+        <motion.div
+          initial={{
+            opacity: 0,
+            x: -20,
+          }}
+          animate={{
+            opacity: 1,
+            x: 0,
+          }}
+          className="flex items-center gap-3"
+        >
 
-          <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-[#CDBA9D] bg-[#FFFDF9]/90">
+          <div className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-[#CDBA9D] bg-[#FFFDF9]/90 shadow-[0_10px_30px_rgba(91,73,49,.08)] backdrop-blur-xl">
 
             <ScanLine className="h-5 w-5 text-[#9B744C]" />
 
@@ -182,31 +275,32 @@ export default function Login() {
 
           <div>
 
-            <h1 className="text-lg font-semibold tracking-[0.18em]">
+            <h1 className="text-base font-semibold tracking-[0.18em] sm:text-lg">
               SURGITRACK
             </h1>
 
-            <p className="text-[11px] text-[#8A8177]">
+            <p className="text-[10px] text-[#8A8177] sm:text-[11px]">
               Surgical Instrument Verification
             </p>
 
           </div>
 
-        </div>
+        </motion.div>
 
-        <div className="hidden items-center gap-2 rounded-full border border-[#B8C7B3] bg-[#F7FBF4]/85 px-4 py-2 text-[11px] font-medium text-[#637B63] md:flex">
+        <div className="hidden items-center gap-2 rounded-full border border-[#B8C7B3] bg-[#F7FBF4]/85 px-4 py-2 text-[11px] font-medium text-[#637B63] backdrop-blur md:flex">
 
           <span className="h-2 w-2 animate-pulse rounded-full bg-[#769377]" />
 
-          SYSTEM ONLINE
+          SECURE ACCESS
 
         </div>
 
       </header>
 
+
       {/* MAIN */}
 
-      <main className="relative z-10 mx-auto grid min-h-[calc(100vh-82px)] max-w-[1450px] grid-cols-1 items-center gap-10 px-6 py-8 lg:grid-cols-[1.05fr_.95fr] lg:px-14">
+      <main className="relative z-10 mx-auto grid min-h-[calc(100vh-82px)] max-w-[1450px] grid-cols-1 items-center gap-10 px-6 py-8 lg:grid-cols-[1.05fr_.95fr] lg:px-14 lg:py-10">
 
         {/* LEFT */}
 
@@ -219,10 +313,13 @@ export default function Login() {
             opacity: 1,
             x: 0,
           }}
+          transition={{
+            duration: 0.9,
+          }}
           className="hidden lg:block"
         >
 
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#D8C7B2] bg-[#FFFDF9]/70 px-4 py-2 text-xs font-medium text-[#8B6845]">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#D8C7B2] bg-[#FFFDF9]/70 px-4 py-2 text-xs font-medium tracking-wide text-[#8B6845] backdrop-blur-xl">
 
             <ShieldCheck className="h-4 w-4" />
 
@@ -230,14 +327,16 @@ export default function Login() {
 
           </div>
 
-          <h2 className="text-6xl font-semibold leading-[1.05] tracking-[-0.045em]">
+          <h2 className="max-w-3xl text-5xl font-semibold leading-[1.04] tracking-[-0.045em] text-[#302D29] xl:text-7xl">
 
             Every instrument.
 
             <br />
 
             <span className="bg-gradient-to-r from-[#96704A] via-[#B38A62] to-[#778B73] bg-clip-text text-transparent">
+
               Accounted for.
+
             </span>
 
           </h2>
@@ -253,7 +352,7 @@ export default function Login() {
 
           <div className="mt-10 grid max-w-2xl grid-cols-3 gap-4">
 
-            <Feature
+            <SystemTile
               icon={
                 RadioTower
               }
@@ -261,7 +360,7 @@ export default function Login() {
               text="Identity tracking"
             />
 
-            <Feature
+            <SystemTile
               icon={
                 Activity
               }
@@ -269,9 +368,9 @@ export default function Login() {
               text="Tray verification"
             />
 
-            <Feature
+            <SystemTile
               icon={
-                BadgeCheck
+                ShieldCheck
               }
               title="Reconcile"
               text="Final status"
@@ -281,244 +380,293 @@ export default function Login() {
 
         </motion.section>
 
-        {/* LOGIN */}
+
+        {/* LOGIN CARD */}
 
         <motion.section
           initial={{
             opacity: 0,
-            y: 25,
+            y: 30,
+            scale: 0.98,
           }}
           animate={{
             opacity: 1,
             y: 0,
+            scale: 1,
+          }}
+          transition={{
+            duration: 0.7,
           }}
           className="mx-auto w-full max-w-[510px]"
         >
 
-          <div className="rounded-[32px] border border-[#D7CCBE] bg-[#FFFDF9]/90 p-7 shadow-[0_28px_90px_rgba(88,68,46,.14)] backdrop-blur-2xl sm:p-9">
+          <div className="relative overflow-hidden rounded-[32px] border border-[#D7CCBE] bg-[#FFFDF9]/90 shadow-[0_28px_90px_rgba(88,68,46,.14)] backdrop-blur-2xl">
 
-            <div className="mb-7">
+            <motion.div
+              animate={{
+                opacity: [
+                  0.3,
+                  0.8,
+                  0.3,
+                ],
+              }}
+              transition={{
+                duration: 4,
+                repeat: Infinity,
+              }}
+              className="absolute left-1/2 top-0 h-px w-2/3 -translate-x-1/2 bg-gradient-to-r from-transparent via-[#B68A5A] to-transparent"
+            />
 
-              <div className="mb-5 flex h-13 w-13 items-center justify-center rounded-2xl border border-[#D8C9B7] bg-[#F5EEE6]">
 
-                <LockKeyhole className="h-5 w-5 text-[#956E46]" />
+            <div className="p-7 sm:p-9">
+
+              {/* LOGIN HEADER */}
+
+              <div className="mb-8">
+
+                <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-[#D8C9B7] bg-[#F5EEE6]">
+
+                  <LockKeyhole className="h-5 w-5 text-[#956E46]" />
+
+                </div>
+
+                <p className="mb-2 text-[11px] font-semibold tracking-[0.19em] text-[#9B744C]">
+
+                  AUTHORIZED PERSONNEL
+
+                </p>
+
+                <h3 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+
+                  Sign in
+
+                </h3>
+
+                <p className="mt-2 text-sm leading-6 text-[#8A8177]">
+
+                  Use your registered hospital Employee ID to access SurgiTrack.
+
+                </p>
 
               </div>
 
-              <div className="text-[11px] font-semibold tracking-[0.19em] text-[#9B744C]">
-                SECURE ACCESS
-              </div>
 
-              <h2 className="mt-2 text-3xl font-semibold">
-                Welcome
-              </h2>
+              {/* FORM */}
 
-              <p className="mt-2 text-sm leading-6 text-[#8A8177]">
-                Sign in to your SurgiTrack profile.
-              </p>
-
-            </div>
-
-            <form
-              onSubmit={
-                handleSubmit
-              }
-              className="space-y-5"
-            >
-
-              {/* NAME */}
-
-              <FormField
-                label="Name"
-                icon={
-                  UserRound
+              <form
+                onSubmit={
+                  handleSubmit
                 }
+                className="space-y-5"
               >
 
-                <input
-                  value={
-                    name
-                  }
-                  onChange={(
-                    event
-                  ) =>
-                    setName(
-                      event
-                        .target
-                        .value
-                    )
-                  }
-                  placeholder="Enter your name"
-                  className="h-full min-w-0 flex-1 bg-transparent text-sm outline-none"
-                />
+                {/* EMPLOYEE ID */}
 
-              </FormField>
+                <div>
 
-              {/* ID */}
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.13em] text-[#8D8379]">
 
-              <FormField
-                label="Employee ID"
-                icon={
-                  BadgeCheck
-                }
-              >
+                    Employee ID
 
-                <input
-                  value={
-                    employeeId
-                  }
-                  onChange={(
-                    event
-                  ) =>
-                    setEmployeeId(
-                      event
-                        .target
-                        .value
-                    )
-                  }
-                  placeholder="Enter employee ID"
-                  className="h-full min-w-0 flex-1 bg-transparent text-sm outline-none"
-                />
+                  </label>
 
-              </FormField>
+                  <div className="flex h-14 items-center gap-3 rounded-2xl border border-[#DED4C8] bg-[#F9F5EF]/90 px-4 transition focus-within:border-[#B78D62] focus-within:bg-[#FFFDF9]">
 
-              {/* PASSWORD */}
+                    <BadgeCheck className="h-4 w-4 shrink-0 text-[#A1978B]" />
 
-              <FormField
-                label="Password"
-                icon={
-                  LockKeyhole
-                }
-              >
-
-                <input
-                  type={
-                    showPassword
-                      ? "text"
-                      : "password"
-                  }
-                  value={
-                    password
-                  }
-                  onChange={(
-                    event
-                  ) =>
-                    setPassword(
-                      event
-                        .target
-                        .value
-                    )
-                  }
-                  placeholder="Enter password"
-                  className="h-full min-w-0 flex-1 bg-transparent text-sm outline-none"
-                />
-
-                <button
-                  type="button"
-                  onClick={() =>
-                    setShowPassword(
-                      (
-                        current
-                      ) =>
-                        !current
-                    )
-                  }
-                  className="text-[#9A9188]"
-                >
-
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-
-                </button>
-
-              </FormField>
-
-              {/* ROLE */}
-
-              <div>
-
-                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.13em] text-[#8D8379]">
-                  Hospital Role
-                </label>
-
-                <div className="flex h-13 items-center rounded-2xl border border-[#DED4C8] bg-[#F9F5EF]/90 px-4">
-
-                  <select
-                    value={
-                      role
-                    }
-                    onChange={(
-                      event
-                    ) =>
-                      setRole(
+                    <input
+                      autoComplete="username"
+                      value={
+                        employeeId
+                      }
+                      onChange={(
                         event
-                          .target
-                          .value
-                      )
-                    }
-                    className="h-full w-full bg-transparent text-sm outline-none"
+                      ) => {
+                        setEmployeeId(
+                          event.target.value
+                        );
+
+                        if (error) {
+                          setError("");
+                        }
+                      }}
+                      disabled={
+                        loading
+                      }
+                      placeholder="Enter employee ID"
+                      className="h-full min-w-0 flex-1 bg-transparent text-sm uppercase outline-none placeholder:normal-case placeholder:text-[#B4AAA0]"
+                    />
+
+                  </div>
+
+                </div>
+
+
+                {/* PASSWORD */}
+
+                <div>
+
+                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.13em] text-[#8D8379]">
+
+                    Password
+
+                  </label>
+
+                  <div className="flex h-14 items-center gap-3 rounded-2xl border border-[#DED4C8] bg-[#F9F5EF]/90 px-4 transition focus-within:border-[#B78D62] focus-within:bg-[#FFFDF9]">
+
+                    <LockKeyhole className="h-4 w-4 shrink-0 text-[#A1978B]" />
+
+                    <input
+                      autoComplete="current-password"
+                      type={
+                        showPassword
+                          ? "text"
+                          : "password"
+                      }
+                      value={
+                        password
+                      }
+                      onChange={(
+                        event
+                      ) => {
+                        setPassword(
+                          event.target.value
+                        );
+
+                        if (error) {
+                          setError("");
+                        }
+                      }}
+                      disabled={
+                        loading
+                      }
+                      placeholder="Enter password"
+                      className="h-full min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#B4AAA0]"
+                    />
+
+                    <button
+                      type="button"
+                      disabled={
+                        loading
+                      }
+                      onClick={() =>
+                        setShowPassword(
+                          (
+                            current
+                          ) =>
+                            !current
+                        )
+                      }
+                      className="shrink-0 text-[#9A9188] transition hover:text-[#655D56]"
+                    >
+
+                      {showPassword ? (
+
+                        <EyeOff className="h-4 w-4" />
+
+                      ) : (
+
+                        <Eye className="h-4 w-4" />
+
+                      )}
+
+                    </button>
+
+                  </div>
+
+                </div>
+
+
+                {/* ERROR */}
+
+                {error && (
+
+                  <motion.div
+                    initial={{
+                      opacity: 0,
+                      y: -5,
+                    }}
+                    animate={{
+                      opacity: 1,
+                      y: 0,
+                    }}
+                    className="rounded-xl border border-[#E3C6BF] bg-[#FBF0ED] px-4 py-3 text-xs leading-5 text-[#A15E54]"
                   >
 
-                    {roles.map(
-                      (
-                        item
-                      ) => (
+                    {error}
 
-                        <option
-                          key={
-                            item
-                          }
-                          value={
-                            item
-                          }
-                        >
-                          {item}
-                        </option>
+                  </motion.div>
 
-                      )
+                )}
+
+
+                {/* LOGIN BUTTON */}
+
+                <motion.button
+                  whileHover={
+                    !loading
+                      ? {
+                          y: -2,
+                          scale: 1.01,
+                        }
+                      : {}
+                  }
+                  whileTap={
+                    !loading
+                      ? {
+                          scale: 0.985,
+                        }
+                      : {}
+                  }
+                  disabled={
+                    loading
+                  }
+                  type="submit"
+                  className={`button-sheen relative flex h-14 w-full items-center justify-center overflow-hidden rounded-2xl text-sm font-semibold text-white shadow-[0_14px_35px_rgba(137,98,61,.22)] ${
+                    loading
+                      ? "cursor-wait bg-[#AF957B]"
+                      : "bg-[#A47B52]"
+                  }`}
+                >
+
+                  <span className="relative z-10 flex items-center gap-3">
+
+                    {loading ? (
+                      <>
+                        <LoaderCircle className="h-4 w-4 animate-spin" />
+
+                        Verifying Credentials...
+                      </>
+                    ) : (
+                      <>
+                        Access SurgiTrack
+
+                        <ArrowRight className="h-4 w-4" />
+                      </>
                     )}
 
-                  </select>
+                  </span>
+
+                </motion.button>
+
+              </form>
+
+
+              {/* FOOTER */}
+
+              <div className="mt-7 border-t border-[#E8DFD5] pt-5">
+
+                <div className="flex items-center gap-2 text-[10px] leading-5 tracking-wide text-[#A69C91]">
+
+                  <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+
+                  Profile name and hospital role are verified from the registered employee account.
 
                 </div>
 
               </div>
 
-              {error && (
-
-                <div className="rounded-xl border border-[#E3C6BF] bg-[#FBF0ED] px-4 py-3 text-xs text-[#A15E54]">
-
-                  {error}
-
-                </div>
-
-              )}
-
-              <motion.button
-                whileHover={{
-                  y: -2,
-                }}
-                whileTap={{
-                  scale: 0.985,
-                }}
-                type="submit"
-                className="button-sheen relative flex h-13 w-full items-center justify-center overflow-hidden rounded-2xl bg-[#A47B52] text-sm font-semibold text-white"
-              >
-
-                <span className="relative z-10 flex items-center gap-3">
-
-                  Access SurgiTrack
-
-                  <ArrowRight className="h-4 w-4" />
-
-                </span>
-
-              </motion.button>
-
-            </form>
+            </div>
 
           </div>
 
@@ -530,31 +678,12 @@ export default function Login() {
   );
 }
 
-function FormField({
-  label,
-  icon: Icon,
-  children,
-}) {
-  return (
-    <div>
 
-      <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.13em] text-[#8D8379]">
-        {label}
-      </label>
+/* =========================================================
+   FEATURE TILE
+========================================================= */
 
-      <div className="flex h-13 items-center gap-3 rounded-2xl border border-[#DED4C8] bg-[#F9F5EF]/90 px-4 focus-within:border-[#B78D62]">
-
-        <Icon className="h-4 w-4 shrink-0 text-[#A1978B]" />
-
-        {children}
-
-      </div>
-
-    </div>
-  );
-}
-
-function Feature({
+function SystemTile({
   icon: Icon,
   title,
   text,
@@ -562,14 +691,18 @@ function Feature({
   return (
     <motion.div
       whileHover={{
-        y: -6,
+        y: -7,
       }}
-      className="rounded-[20px] border border-[#DCD1C4] bg-[#FFFDF9]/65 p-4"
+      className="rounded-[20px] border border-[#DCD1C4] bg-[#FFFDF9]/65 p-4 backdrop-blur-xl"
     >
 
-      <Icon className="h-5 w-5 text-[#9A724A]" />
+      <div className="mb-5 flex h-9 w-9 items-center justify-center rounded-xl bg-[#F1E9DE]">
 
-      <div className="mt-5 text-sm font-semibold">
+        <Icon className="h-4 w-4 text-[#9A724A]" />
+
+      </div>
+
+      <div className="text-sm font-semibold">
         {title}
       </div>
 

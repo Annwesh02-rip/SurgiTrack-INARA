@@ -1,21 +1,95 @@
 const CURRENT_USER_KEY =
   "surgitrack_current_user";
 
+const AUTH_TOKEN_KEY =
+  "surgitrack_auth_token";
+
+const CURRENT_PROCEDURE_ID_KEY =
+  "surgitrack_current_procedure_id";
+
+
 /* =========================================================
-   INTERNAL HELPERS
+   ALLOWED FRONTEND ROLES
 ========================================================= */
 
-function read(key, fallback) {
+export const ALLOWED_ROLES = [
+  "Doctor",
+  "OT Technician",
+  "Nurse",
+];
+
+
+function normalizeRole(
+  role
+) {
+  const value =
+    String(role || "")
+      .trim()
+      .toLowerCase();
+
+  if (
+    value === "doctor" ||
+    value === "dr" ||
+    value === "surgeon"
+  ) {
+    return "Doctor";
+  }
+
+  if (
+    value === "ot technician" ||
+    value === "ot_technician" ||
+    value === "technician" ||
+    value === "ot technician staff"
+  ) {
+    return "OT Technician";
+  }
+
+  if (
+    value === "nurse" ||
+    value === "ot nurse"
+  ) {
+    return "Nurse";
+  }
+
+  return String(
+    role || ""
+  ).trim();
+}
+
+
+export function isAllowedRole(
+  role
+) {
+  return ALLOWED_ROLES.includes(
+    normalizeRole(role)
+  );
+}
+
+
+/* =========================================================
+   INTERNAL STORAGE HELPERS
+========================================================= */
+
+function readJSON(
+  key,
+  fallback
+) {
   try {
     const raw =
-      localStorage.getItem(key);
+      localStorage.getItem(
+        key
+      );
 
     if (!raw) {
       return fallback;
     }
 
-    return JSON.parse(raw);
-  } catch (error) {
+    return JSON.parse(
+      raw
+    );
+  } catch (
+    error
+  ) {
     console.error(
       "SurgiTrack storage read error:",
       error
@@ -25,39 +99,73 @@ function read(key, fallback) {
   }
 }
 
-function write(key, value) {
+
+function writeJSON(
+  key,
+  value
+) {
   localStorage.setItem(
     key,
-    JSON.stringify(value)
+    JSON.stringify(
+      value
+    )
   );
 }
 
-function normalize(value) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]/g, "_");
-}
 
 /* =========================================================
-   USER SESSION
+   AUTH TOKEN
 ========================================================= */
 
-export function getCurrentUser() {
-  return read(
-    CURRENT_USER_KEY,
-    {
-      name: "User",
-      employeeId: "",
-      role: "",
-    }
+export function saveAuthToken(
+  token
+) {
+  if (!token) {
+    return;
+  }
+
+  localStorage.setItem(
+    AUTH_TOKEN_KEY,
+    token
   );
 }
+
+
+export function getAuthToken() {
+  return (
+    localStorage.getItem(
+      AUTH_TOKEN_KEY
+    ) || ""
+  );
+}
+
+
+export function clearAuthToken() {
+  localStorage.removeItem(
+    AUTH_TOKEN_KEY
+  );
+}
+
+
+export function isAuthenticated() {
+  return Boolean(
+    getAuthToken()
+  );
+}
+
+
+/* =========================================================
+   CURRENT USER
+========================================================= */
 
 export function saveCurrentUser(
   user
 ) {
   const cleaned = {
+    id:
+      user?.id ??
+      null,
+
     name:
       String(
         user?.name || ""
@@ -65,16 +173,25 @@ export function saveCurrentUser(
 
     employeeId:
       String(
-        user?.employeeId || ""
-      ).trim(),
+        user?.employeeId ||
+          user?.employee_id ||
+          ""
+      )
+        .trim()
+        .toUpperCase(),
 
     role:
+      normalizeRole(
+        user?.role
+      ),
+
+    email:
       String(
-        user?.role || ""
+        user?.email || ""
       ).trim(),
   };
 
-  write(
+  writeJSON(
     CURRENT_USER_KEY,
     cleaned
   );
@@ -82,74 +199,156 @@ export function saveCurrentUser(
   return cleaned;
 }
 
-export function clearCurrentUser() {
-  /*
-   * IMPORTANT:
-   * Logout only removes the active login session.
-   *
-   * It does NOT remove that employee's:
-   * - active procedure
-   * - history
-   *
-   * When FastAPI/DB is connected,
-   * these records will live in the backend.
-   */
 
-  localStorage.removeItem(
-    CURRENT_USER_KEY
+export function getCurrentUser() {
+  return readJSON(
+    CURRENT_USER_KEY,
+    {
+      id: null,
+      name: "User",
+      employeeId: "",
+      role: "",
+      email: "",
+    }
   );
 }
 
+
+export function clearCurrentUser() {
+  localStorage.removeItem(
+    CURRENT_USER_KEY
+  );
+
+  localStorage.removeItem(
+    CURRENT_PROCEDURE_ID_KEY
+  );
+
+  clearAuthToken();
+}
+
+
 /* =========================================================
-   PER-EMPLOYEE STORAGE NAMESPACE
+   CURRENT PROCEDURE ID
+
+   This is the only procedure-related local value we need
+   after the frontend is fully connected.
+
+   The full procedure itself comes from FastAPI.
 ========================================================= */
+
+export function saveCurrentProcedureId(
+  procedureId
+) {
+  if (
+    procedureId === null ||
+    procedureId === undefined
+  ) {
+    localStorage.removeItem(
+      CURRENT_PROCEDURE_ID_KEY
+    );
+
+    return;
+  }
+
+  localStorage.setItem(
+    CURRENT_PROCEDURE_ID_KEY,
+    String(procedureId)
+  );
+}
+
+
+export function getCurrentProcedureId() {
+  const value =
+    localStorage.getItem(
+      CURRENT_PROCEDURE_ID_KEY
+    );
+
+  if (!value) {
+    return null;
+  }
+
+  const number =
+    Number(value);
+
+  return Number.isFinite(
+    number
+  )
+    ? number
+    : null;
+}
+
+
+export function clearCurrentProcedureId() {
+  localStorage.removeItem(
+    CURRENT_PROCEDURE_ID_KEY
+  );
+}
+
+
+/* =========================================================
+   TEMPORARY LEGACY COMPATIBILITY
+
+   Existing pages still import these functions.
+
+   We will remove these after Dashboard / NewProcedure /
+   RFID / Vision / FinalReconciliation are converted to API.
+========================================================= */
+
+function normalize(
+  value
+) {
+  return String(
+    value || ""
+  )
+    .trim()
+    .toLowerCase()
+    .replace(
+      /[^a-z0-9_-]/g,
+      "_"
+    );
+}
+
 
 function getEmployeeStorageId() {
   const user =
     getCurrentUser();
 
-  /*
-   * Employee ID is our frontend identity
-   * until backend authentication is connected.
-   */
-
-  const employeeId =
+  return (
     normalize(
       user.employeeId
-    );
-
-  if (employeeId) {
-    return employeeId;
-  }
-
-  /*
-   * Fallback only prevents crashes.
-   * Login now requires Employee ID.
-   */
-
-  return normalize(
-    user.name
-  ) || "anonymous";
+    ) ||
+    normalize(
+      user.name
+    ) ||
+    "anonymous"
+  );
 }
+
 
 function employeeKey(
   suffix
 ) {
-  return `surgitrack_${getEmployeeStorageId()}_${suffix}`;
+  return (
+    `surgitrack_` +
+    `${getEmployeeStorageId()}_` +
+    suffix
+  );
 }
 
+
 /* =========================================================
-   ACTIVE PROCEDURE
+   LEGACY CURRENT PROCEDURE
 ========================================================= */
 
 export function getCurrentProcedure() {
-  return read(
+  return readJSON(
     employeeKey(
       "active_procedure"
     ),
     null
   );
 }
+
 
 export function saveCurrentProcedure(
   procedure
@@ -162,15 +361,26 @@ export function saveCurrentProcedure(
       new Date().toISOString(),
   };
 
-  write(
+  writeJSON(
     employeeKey(
       "active_procedure"
     ),
     record
   );
 
+  if (
+    procedure?.id !==
+      undefined &&
+    procedure?.id !== null
+  ) {
+    saveCurrentProcedureId(
+      procedure.id
+    );
+  }
+
   return record;
 }
+
 
 export function clearCurrentProcedure() {
   localStorage.removeItem(
@@ -178,14 +388,17 @@ export function clearCurrentProcedure() {
       "active_procedure"
     )
   );
+
+  clearCurrentProcedureId();
 }
 
+
 /* =========================================================
-   RFID SCANS
+   LEGACY RFID STORAGE
 ========================================================= */
 
 export function getRfidScans() {
-  return read(
+  return readJSON(
     employeeKey(
       "rfid_scans"
     ),
@@ -193,20 +406,27 @@ export function getRfidScans() {
   );
 }
 
+
 export function addRfidScan(
   scan
 ) {
   const current =
     getRfidScans();
 
-  const alreadyExists =
+  const uid =
+    scan?.uid ||
+    scan?.rfid_uid;
+
+  const duplicate =
     current.some(
       (item) =>
-        item.uid ===
-        scan.uid
+        (
+          item?.uid ||
+          item?.rfid_uid
+        ) === uid
     );
 
-  if (alreadyExists) {
+  if (duplicate) {
     return {
       added: false,
       scans: current,
@@ -218,7 +438,7 @@ export function addRfidScan(
     scan,
   ];
 
-  write(
+  writeJSON(
     employeeKey(
       "rfid_scans"
     ),
@@ -231,16 +451,20 @@ export function addRfidScan(
   };
 }
 
+
 export function removeRfidScan(
   uid
 ) {
   const updated =
     getRfidScans().filter(
       (item) =>
-        item.uid !== uid
+        (
+          item?.uid ||
+          item?.rfid_uid
+        ) !== uid
     );
 
-  write(
+  writeJSON(
     employeeKey(
       "rfid_scans"
     ),
@@ -250,6 +474,7 @@ export function removeRfidScan(
   return updated;
 }
 
+
 export function clearRfidScans() {
   localStorage.removeItem(
     employeeKey(
@@ -258,23 +483,32 @@ export function clearRfidScans() {
   );
 }
 
+
 /* =========================================================
-   VISION STATUS
+   LEGACY VISION STORAGE
 ========================================================= */
 
 export function getVisionStatus() {
-  return read(
+  return readJSON(
     employeeKey(
       "vision_status"
     ),
     {
-      preOpCaptured: false,
-      postOpCaptured: false,
-      preOpCapturedAt: null,
-      postOpCapturedAt: null,
+      preOpCaptured:
+        false,
+
+      postOpCaptured:
+        false,
+
+      preOpCapturedAt:
+        null,
+
+      postOpCapturedAt:
+        null,
     }
   );
 }
+
 
 export function setPreOpCaptured(
   captured = true
@@ -294,7 +528,7 @@ export function setPreOpCaptured(
         : null,
   };
 
-  write(
+  writeJSON(
     employeeKey(
       "vision_status"
     ),
@@ -303,6 +537,7 @@ export function setPreOpCaptured(
 
   return updated;
 }
+
 
 export function setPostOpCaptured(
   captured = true
@@ -322,7 +557,7 @@ export function setPostOpCaptured(
         : null,
   };
 
-  write(
+  writeJSON(
     employeeKey(
       "vision_status"
     ),
@@ -332,6 +567,7 @@ export function setPostOpCaptured(
   return updated;
 }
 
+
 export function clearVisionStatus() {
   localStorage.removeItem(
     employeeKey(
@@ -340,12 +576,13 @@ export function clearVisionStatus() {
   );
 }
 
+
 /* =========================================================
-   EMPLOYEE PROCEDURE HISTORY
+   LEGACY HISTORY STORAGE
 ========================================================= */
 
 export function getProcedureHistory() {
-  return read(
+  return readJSON(
     employeeKey(
       "procedure_history"
     ),
@@ -353,10 +590,11 @@ export function getProcedureHistory() {
   );
 }
 
+
 function saveProcedureHistory(
   history
 ) {
-  write(
+  writeJSON(
     employeeKey(
       "procedure_history"
     ),
@@ -366,20 +604,6 @@ function saveProcedureHistory(
   return history;
 }
 
-/* =========================================================
-   ARCHIVE COMPLETED PROCEDURE
-
-   This is the important part.
-
-   Current workflow:
-   Active Procedure
-       ↓
-   Archive
-       ↓
-   Employee History
-       ↓
-   Clear Active State
-========================================================= */
 
 export function archiveCurrentProcedure() {
   const user =
@@ -437,11 +661,7 @@ export function archiveCurrentProcedure() {
     },
 
     rfidScans:
-      scans.map(
-        (scan) => ({
-          ...scan,
-        })
-      ),
+      scans,
 
     instrumentCount:
       scans.length,
@@ -465,44 +685,24 @@ export function archiveCurrentProcedure() {
         vision.postOpCapturedAt ||
         null,
     },
-
-    /*
-     * CNN will later replace this field
-     * with the actual reconciliation result.
-     */
-
-    visionReconciliation:
-      "Awaiting AI integration",
   };
 
   const history =
     getProcedureHistory();
 
-  const updatedHistory = [
+  saveProcedureHistory([
     archiveRecord,
     ...history,
-  ];
-
-  saveProcedureHistory(
-    updatedHistory
-  );
-
-  /*
-   * Procedure has now moved to HISTORY.
-   *
-   * Remove active state so the next
-   * procedure starts completely clean.
-   */
+  ]);
 
   clearActiveProcedureState();
 
   return archiveRecord;
 }
 
-/* =========================================================
-   CLEAR ONLY ACTIVE WORKFLOW
 
-   HISTORY IS NEVER CLEARED HERE.
+/* =========================================================
+   LEGACY WORKFLOW CLEANUP
 ========================================================= */
 
 export function clearActiveProcedureState() {

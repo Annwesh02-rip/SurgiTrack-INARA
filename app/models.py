@@ -9,7 +9,6 @@ from sqlalchemy import (
     String,
     Text,
 )
-
 from sqlalchemy.orm import relationship
 
 from app.database import Base
@@ -25,46 +24,59 @@ class User(Base):
     id = Column(
         Integer,
         primary_key=True,
-        index=True
+        index=True,
     )
 
     name = Column(
+        String(120),
+        nullable=False,
+    )
+
+    employee_id = Column(
         String(100),
-        nullable=False
+        unique=True,
+        nullable=False,
+        index=True,
     )
 
     email = Column(
-        String(150),
+        String(180),
         unique=True,
-        nullable=False,
-        index=True
+        nullable=True,
+        index=True,
     )
 
     hashed_password = Column(
         String(255),
-        nullable=False
+        nullable=False,
+    )
+
+    role = Column(
+        String(100),
+        nullable=False,
+        default="OT Technician",
     )
 
     is_active = Column(
         Boolean,
         nullable=False,
-        default=True
+        default=True,
     )
 
     created_at = Column(
         DateTime,
-        default=datetime.utcnow
+        nullable=False,
+        default=datetime.utcnow,
     )
 
     procedures = relationship(
         "Procedure",
-        back_populates="created_by_user"
+        back_populates="created_by_user",
     )
 
 
 # =========================================================
-# INSTRUMENT
-# RFID UID IS THE PRIMARY KEY
+# INSTRUMENT INVENTORY
 # =========================================================
 
 class Instrument(Base):
@@ -74,40 +86,40 @@ class Instrument(Base):
         String(100),
         primary_key=True,
         nullable=False,
-        index=True
+        index=True,
     )
 
     name = Column(
         String(100),
-        nullable=False
+        nullable=False,
     )
 
     instrument_type = Column(
         String(100),
         nullable=False,
-        index=True
+        index=True,
     )
 
     status = Column(
         String(50),
         nullable=False,
-        default="available"
+        default="available",
     )
 
     is_active = Column(
         Boolean,
         nullable=False,
-        default=True
+        default=True,
     )
 
     description = Column(
         String(500),
-        nullable=True
+        nullable=True,
     )
 
     procedure_links = relationship(
         "ProcedureInstrument",
-        back_populates="instrument"
+        back_populates="instrument",
     )
 
 
@@ -121,83 +133,93 @@ class Procedure(Base):
     id = Column(
         Integer,
         primary_key=True,
-        index=True
+        index=True,
+    )
+
+    case_id = Column(
+        String(100),
+        nullable=True,
+        index=True,
     )
 
     procedure_name = Column(
         String(200),
-        nullable=False
+        nullable=False,
     )
 
+    # Kept for backward compatibility.
     patient_name = Column(
         String(200),
-        nullable=True
+        nullable=True,
     )
 
     surgeon_name = Column(
         String(200),
-        nullable=True
+        nullable=True,
+    )
+
+    ot_room = Column(
+        String(100),
+        nullable=True,
     )
 
     status = Column(
         String(50),
         nullable=False,
-        default="created"
+        default="created",
     )
 
     created_by = Column(
         Integer,
         ForeignKey("users.id"),
-        nullable=True
+        nullable=True,
     )
 
     created_at = Column(
         DateTime,
-        default=datetime.utcnow
+        nullable=False,
+        default=datetime.utcnow,
     )
 
     updated_at = Column(
         DateTime,
+        nullable=False,
         default=datetime.utcnow,
-        onupdate=datetime.utcnow
+        onupdate=datetime.utcnow,
     )
 
     created_by_user = relationship(
         "User",
-        back_populates="procedures"
+        back_populates="procedures",
     )
 
     instruments = relationship(
         "ProcedureInstrument",
         back_populates="procedure",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
     )
 
     images = relationship(
         "ImageRecord",
         back_populates="procedure",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
     )
 
     verifications = relationship(
         "Verification",
         back_populates="procedure",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
     )
 
     events = relationship(
         "Event",
         back_populates="procedure",
-        cascade="all, delete-orphan"
+        cascade="all, delete-orphan",
     )
 
 
 # =========================================================
-# PROCEDURE ↔ INSTRUMENT
-#
-# IMPORTANT:
-# instrument_rfid_uid references instruments.rfid_uid
-# NOT instruments.id
+# PROCEDURE <-> INSTRUMENT
 # =========================================================
 
 class ProcedureInstrument(Base):
@@ -206,47 +228,50 @@ class ProcedureInstrument(Base):
     id = Column(
         Integer,
         primary_key=True,
-        index=True
+        index=True,
     )
 
     procedure_id = Column(
         Integer,
         ForeignKey("procedures.id"),
-        nullable=False
+        nullable=False,
     )
 
     instrument_rfid_uid = Column(
         String(100),
         ForeignKey("instruments.rfid_uid"),
         nullable=False,
-        index=True
+        index=True,
     )
 
+    # Registered before procedure.
     expected = Column(
         Boolean,
         nullable=False,
-        default=True
+        default=True,
     )
 
+    # Used later for final/post-op RFID checking.
     detected = Column(
         Boolean,
         nullable=False,
-        default=False
+        default=False,
     )
 
     created_at = Column(
         DateTime,
-        default=datetime.utcnow
+        nullable=False,
+        default=datetime.utcnow,
     )
 
     procedure = relationship(
         "Procedure",
-        back_populates="instruments"
+        back_populates="instruments",
     )
 
     instrument = relationship(
         "Instrument",
-        back_populates="procedure_links"
+        back_populates="procedure_links",
     )
 
 
@@ -260,33 +285,35 @@ class ImageRecord(Base):
     id = Column(
         Integer,
         primary_key=True,
-        index=True
+        index=True,
     )
 
     procedure_id = Column(
         Integer,
         ForeignKey("procedures.id"),
-        nullable=False
+        nullable=False,
     )
 
     image_path = Column(
         String(500),
-        nullable=False
+        nullable=False,
     )
 
+    # pre_op or post_op
     image_type = Column(
         String(50),
-        nullable=False
+        nullable=False,
     )
 
     uploaded_at = Column(
         DateTime,
-        default=datetime.utcnow
+        nullable=False,
+        default=datetime.utcnow,
     )
 
     procedure = relationship(
         "Procedure",
-        back_populates="images"
+        back_populates="images",
     )
 
 
@@ -300,53 +327,58 @@ class Verification(Base):
     id = Column(
         Integer,
         primary_key=True,
-        index=True
+        index=True,
     )
 
     procedure_id = Column(
         Integer,
         ForeignKey("procedures.id"),
-        nullable=False
+        nullable=False,
     )
 
     status = Column(
         String(50),
-        nullable=False
+        nullable=False,
     )
 
     expected_count = Column(
         Integer,
-        default=0
+        nullable=False,
+        default=0,
     )
 
     detected_count = Column(
         Integer,
-        default=0
+        nullable=False,
+        default=0,
     )
 
     missing_count = Column(
         Integer,
-        default=0
+        nullable=False,
+        default=0,
     )
 
     extra_count = Column(
         Integer,
-        default=0
+        nullable=False,
+        default=0,
     )
 
     details = Column(
         Text,
-        nullable=True
+        nullable=True,
     )
 
     created_at = Column(
         DateTime,
-        default=datetime.utcnow
+        nullable=False,
+        default=datetime.utcnow,
     )
 
     procedure = relationship(
         "Procedure",
-        back_populates="verifications"
+        back_populates="verifications",
     )
 
 
@@ -360,36 +392,37 @@ class Event(Base):
     id = Column(
         Integer,
         primary_key=True,
-        index=True
+        index=True,
     )
 
     procedure_id = Column(
         Integer,
         ForeignKey("procedures.id"),
-        nullable=True
+        nullable=True,
     )
 
     event_type = Column(
         String(100),
-        nullable=False
+        nullable=False,
     )
 
     message = Column(
         Text,
-        nullable=True
+        nullable=True,
     )
 
     instrument_rfid_uid = Column(
         String(100),
-        nullable=True
+        nullable=True,
     )
 
     created_at = Column(
         DateTime,
-        default=datetime.utcnow
+        nullable=False,
+        default=datetime.utcnow,
     )
 
     procedure = relationship(
         "Procedure",
-        back_populates="events"
+        back_populates="events",
     )

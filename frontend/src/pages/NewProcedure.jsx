@@ -16,16 +16,24 @@ import {
   ClipboardPlus,
   DoorOpen,
   Hash,
+  LoaderCircle,
   ScanLine,
   Stethoscope,
   UserRound,
 } from "lucide-react";
 
 import {
+  createProcedure,
+  updateProcedureStatus,
+} from "../services/api";
+
+import {
   clearActiveProcedureState,
   getCurrentUser,
   saveCurrentProcedure,
+  saveCurrentProcedureId,
 } from "../utils/demoStore";
+
 
 export default function NewProcedure() {
   const navigate =
@@ -49,6 +57,16 @@ export default function NewProcedure() {
     setError,
   ] = useState("");
 
+  const [
+    loading,
+    setLoading,
+  ] = useState(false);
+
+
+  /* =========================================================
+     UPDATE FORM
+  ========================================================= */
+
   const update = (
     field,
     value
@@ -58,84 +76,220 @@ export default function NewProcedure() {
         current
       ) => ({
         ...current,
-        [field]: value,
+        [field]:
+          value,
       })
     );
+
+    if (error) {
+      setError("");
+    }
   };
 
-  const handleSubmit = (
-    event
-  ) => {
-    event.preventDefault();
 
-    if (
-      !form.caseId.trim()
-    ) {
-      setError(
-        "Enter the Case ID."
-      );
+  /* =========================================================
+     CREATE PROCEDURE IN FASTAPI
+  ========================================================= */
 
-      return;
-    }
+  const handleSubmit =
+    async (
+      event
+    ) => {
+      event.preventDefault();
 
-    if (
-      !form.procedureName.trim()
-    ) {
-      setError(
-        "Enter the procedure name."
-      );
+      if (loading) {
+        return;
+      }
 
-      return;
-    }
+      const caseId =
+        form.caseId
+          .trim()
+          .toUpperCase();
 
-    if (
-      !form.surgeon.trim()
-    ) {
-      setError(
-        "Enter the lead surgeon."
-      );
+      const procedureName =
+        form.procedureName
+          .trim();
 
-      return;
-    }
+      const surgeon =
+        form.surgeon
+          .trim();
 
-    setError("");
+      const otRoom =
+        form.otRoom
+          .trim();
 
-    /*
-     * New procedure =
-     * clean active workflow.
-     *
-     * History is NOT affected.
-     */
+      if (!caseId) {
+        setError(
+          "Enter the Case ID."
+        );
 
-    clearActiveProcedureState();
+        return;
+      }
 
-    saveCurrentProcedure({
-      caseId:
-        form.caseId.trim(),
+      if (!procedureName) {
+        setError(
+          "Enter the procedure name."
+        );
 
-      procedureName:
-        form.procedureName.trim(),
+        return;
+      }
 
-      otRoom:
-        form.otRoom,
+      if (!surgeon) {
+        setError(
+          "Enter the lead surgeon."
+        );
 
-      surgeon:
-        form.surgeon.trim(),
+        return;
+      }
 
-      createdAt:
-        new Date().toISOString(),
+      if (!otRoom) {
+        setError(
+          "Select the operating theatre."
+        );
 
-      status:
-        "rfid-registration",
-    });
+        return;
+      }
 
-    navigate(
-      "/rfid-registration"
-    );
-  };
+      setLoading(true);
+      setError("");
+
+      try {
+        /*
+         * Creates the real SQLite
+         * procedure through FastAPI.
+         */
+
+        const created =
+          await createProcedure({
+            caseId,
+            procedureName,
+            surgeon,
+            otRoom,
+          });
+
+        if (
+          !created ||
+          created.id ===
+            undefined ||
+          created.id === null
+        ) {
+          throw new Error(
+            "Backend did not return a procedure ID."
+          );
+        }
+
+        /*
+         * Clear any old temporary
+         * frontend workflow state.
+         *
+         * This does NOT delete the
+         * backend procedure.
+         */
+
+        clearActiveProcedureState();
+
+        /*
+         * Keep only the backend ID as
+         * the long-term frontend
+         * workflow reference.
+         */
+
+        saveCurrentProcedureId(
+          created.id
+        );
+
+        /*
+         * Temporary compatibility
+         * record.
+         *
+         * Existing pages are being
+         * converted one-by-one.
+         */
+
+        saveCurrentProcedure({
+          id:
+            created.id,
+
+          caseId:
+            created.case_id ||
+            caseId,
+
+          procedureName:
+            created.procedure_name ||
+            procedureName,
+
+          otRoom:
+            created.ot_room ||
+            otRoom,
+
+          surgeon:
+            created.surgeon_name ||
+            surgeon,
+
+          createdAt:
+            created.created_at ||
+            new Date()
+              .toISOString(),
+
+          status:
+            "rfid_registration",
+        });
+
+        /*
+         * Tell backend that the user
+         * is moving to RFID setup.
+         */
+
+        try {
+          await updateProcedureStatus(
+            created.id,
+            "rfid_registration"
+          );
+        } catch (
+          statusError
+        ) {
+          /*
+           * Procedure itself has
+           * already been created.
+           *
+           * Do not make the user
+           * accidentally create a
+           * duplicate case just
+           * because status update
+           * failed.
+           */
+
+          console.warn(
+            "Procedure created, but status update failed:",
+            statusError
+          );
+        }
+
+        navigate(
+          "/rfid-registration"
+        );
+      } catch (
+        createError
+      ) {
+        console.error(
+          "Procedure creation failed:",
+          createError
+        );
+
+        setError(
+          createError?.message ||
+          "Unable to create the procedure."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#F5F0E8] text-[#2D2A26]">
+
+      {/* BACKGROUND */}
 
       <div className="pointer-events-none fixed inset-0">
 
@@ -150,7 +304,10 @@ export default function NewProcedure() {
 
       </div>
 
-      {/* HEADER */}
+
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
 
       <header className="relative z-30 border-b border-[#DED5CA] bg-[#FAF7F2]/82 backdrop-blur-2xl">
 
@@ -159,16 +316,16 @@ export default function NewProcedure() {
           <div className="flex items-center gap-4">
 
             <button
+              type="button"
+              disabled={loading}
               onClick={() =>
                 navigate(
                   "/dashboard"
                 )
               }
-              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#DDD2C5] bg-[#FFFDF9]"
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#DDD2C5] bg-[#FFFDF9] transition hover:bg-[#F4ECE2] disabled:cursor-not-allowed disabled:opacity-50"
             >
-
               <ArrowLeft className="h-4 w-4" />
-
             </button>
 
             <div className="flex items-center gap-3">
@@ -195,6 +352,9 @@ export default function NewProcedure() {
 
           </div>
 
+
+          {/* CURRENT USER */}
+
           <div className="hidden text-right sm:block">
 
             <div className="text-sm font-medium">
@@ -202,6 +362,8 @@ export default function NewProcedure() {
             </div>
 
             <div className="text-[11px] text-[#968C82]">
+              {user.employeeId}
+              {" · "}
               {user.role}
             </div>
 
@@ -211,7 +373,10 @@ export default function NewProcedure() {
 
       </header>
 
-      {/* MAIN */}
+
+      {/* =====================================================
+          MAIN
+      ===================================================== */}
 
       <main className="relative z-10 mx-auto max-w-[1100px] px-6 py-12">
 
@@ -230,10 +395,15 @@ export default function NewProcedure() {
           </h1>
 
           <p className="mt-3 text-sm text-[#877D73]">
-            Create a fresh surgical procedure session.
+            Create a new surgical procedure and continue to RFID instrument registration.
           </p>
 
         </div>
+
+
+        {/* ===================================================
+            FORM
+        =================================================== */}
 
         <motion.form
           onSubmit={
@@ -252,6 +422,9 @@ export default function NewProcedure() {
 
           <div className="grid gap-6 md:grid-cols-2">
 
+
+            {/* CASE ID */}
+
             <InputField
               label="Case ID"
               icon={Hash}
@@ -259,16 +432,21 @@ export default function NewProcedure() {
               value={
                 form.caseId
               }
+              disabled={
+                loading
+              }
               onChange={(
                 event
               ) =>
                 update(
                   "caseId",
-                  event.target
-                    .value
+                  event.target.value
                 )
               }
             />
+
+
+            {/* OT */}
 
             <SelectField
               label="Operating Theatre"
@@ -278,38 +456,43 @@ export default function NewProcedure() {
               value={
                 form.otRoom
               }
+              disabled={
+                loading
+              }
               onChange={(
                 event
               ) =>
                 update(
                   "otRoom",
-                  event.target
-                    .value
+                  event.target.value
                 )
               }
             >
 
-              <option>
+              <option value="OT 01">
                 OT 01
               </option>
 
-              <option>
+              <option value="OT 02">
                 OT 02
               </option>
 
-              <option>
+              <option value="OT 03">
                 OT 03
               </option>
 
-              <option>
+              <option value="OT 04">
                 OT 04
               </option>
 
-              <option>
+              <option value="OT 05">
                 OT 05
               </option>
 
             </SelectField>
+
+
+            {/* PROCEDURE */}
 
             <div className="md:col-span-2">
 
@@ -322,18 +505,23 @@ export default function NewProcedure() {
                 value={
                   form.procedureName
                 }
+                disabled={
+                  loading
+                }
                 onChange={(
                   event
                 ) =>
                   update(
                     "procedureName",
-                    event.target
-                      .value
+                    event.target.value
                   )
                 }
               />
 
             </div>
+
+
+            {/* SURGEON */}
 
             <div className="md:col-span-2">
 
@@ -346,13 +534,15 @@ export default function NewProcedure() {
                 value={
                   form.surgeon
                 }
+                disabled={
+                  loading
+                }
                 onChange={(
                   event
                 ) =>
                   update(
                     "surgeon",
-                    event.target
-                      .value
+                    event.target.value
                   )
                 }
               />
@@ -361,15 +551,29 @@ export default function NewProcedure() {
 
           </div>
 
+
+          {/* ERROR */}
+
           {error && (
 
-            <div className="mt-6 rounded-xl border border-[#E3C6BF] bg-[#FBF0ED] px-4 py-3 text-xs text-[#A15E54]">
-
+            <motion.div
+              initial={{
+                opacity: 0,
+                y: -4,
+              }}
+              animate={{
+                opacity: 1,
+                y: 0,
+              }}
+              className="mt-6 rounded-xl border border-[#E3C6BF] bg-[#FBF0ED] px-4 py-3 text-xs leading-5 text-[#A15E54]"
+            >
               {error}
-
-            </div>
+            </motion.div>
 
           )}
+
+
+          {/* PERSONNEL */}
 
           <div className="mt-7 rounded-2xl border border-[#DDD2C5] bg-[#F8F3EC] p-4">
 
@@ -382,38 +586,98 @@ export default function NewProcedure() {
             </div>
 
             <div className="mt-1 text-xs text-[#968B81]">
-              {user.employeeId} · {user.role}
+
+              {user.employeeId}
+
+              {" · "}
+
+              {user.role}
+
             </div>
 
           </div>
+
+
+          {/* BACKEND MESSAGE */}
+
+          <div className="mt-4 rounded-2xl border border-[#DCE4D8] bg-[#F5F9F2] px-4 py-3">
+
+            <div className="text-[10px] font-semibold uppercase tracking-[0.13em] text-[#71846D]">
+              Backend Connected
+            </div>
+
+            <div className="mt-1 text-xs leading-5 text-[#7E887A]">
+              Procedure details will be saved to the SurgiTrack database before RFID registration begins.
+            </div>
+
+          </div>
+
+
+          {/* ACTIONS */}
 
           <div className="mt-8 flex items-center justify-between border-t border-[#E9E1D8] pt-6">
 
             <button
               type="button"
+              disabled={
+                loading
+              }
               onClick={() =>
                 navigate(
                   "/dashboard"
                 )
               }
-              className="rounded-xl px-5 py-3 text-sm text-[#877A6F]"
+              className="rounded-xl px-5 py-3 text-sm text-[#877A6F] transition hover:bg-[#F4ECE2] disabled:cursor-not-allowed disabled:opacity-50"
             >
               Cancel
             </button>
 
+
             <motion.button
-              whileHover={{
-                y: -2,
-              }}
+              whileHover={
+                !loading
+                  ? {
+                      y: -2,
+                    }
+                  : {}
+              }
+              whileTap={
+                !loading
+                  ? {
+                      scale: 0.985,
+                    }
+                  : {}
+              }
+              disabled={
+                loading
+              }
               type="submit"
-              className="button-sheen relative flex h-12 items-center overflow-hidden rounded-xl bg-[#A27A53] px-6 text-sm font-semibold text-white"
+              className={`button-sheen relative flex h-12 min-w-[185px] items-center justify-center overflow-hidden rounded-xl px-6 text-sm font-semibold text-white ${
+                loading
+                  ? "cursor-wait bg-[#B59B80]"
+                  : "bg-[#A27A53]"
+              }`}
             >
 
               <span className="relative z-10 flex items-center gap-3">
 
-                Continue to RFID
+                {loading ? (
+                  <>
 
-                <ArrowRight className="h-4 w-4" />
+                    <LoaderCircle className="h-4 w-4 animate-spin" />
+
+                    Creating...
+
+                  </>
+                ) : (
+                  <>
+
+                    Continue to RFID
+
+                    <ArrowRight className="h-4 w-4" />
+
+                  </>
+                )}
 
               </span>
 
@@ -429,9 +693,15 @@ export default function NewProcedure() {
   );
 }
 
+
+/* =========================================================
+   INPUT
+========================================================= */
+
 function InputField({
   label,
   icon: Icon,
+  disabled,
   ...props
 }) {
   return (
@@ -441,13 +711,22 @@ function InputField({
         {label}
       </label>
 
-      <div className="flex h-14 items-center gap-3 rounded-2xl border border-[#DDD3C7] bg-[#FAF6F0] px-4">
+      <div
+        className={`flex h-14 items-center gap-3 rounded-2xl border border-[#DDD3C7] bg-[#FAF6F0] px-4 transition focus-within:border-[#B88F66] ${
+          disabled
+            ? "opacity-60"
+            : ""
+        }`}
+      >
 
-        <Icon className="h-4 w-4 text-[#A1978C]" />
+        <Icon className="h-4 w-4 shrink-0 text-[#A1978C]" />
 
         <input
           {...props}
-          className="h-full w-full bg-transparent text-sm outline-none"
+          disabled={
+            disabled
+          }
+          className="h-full w-full bg-transparent text-sm outline-none placeholder:text-[#B1A69B] disabled:cursor-not-allowed"
         />
 
       </div>
@@ -456,10 +735,16 @@ function InputField({
   );
 }
 
+
+/* =========================================================
+   SELECT
+========================================================= */
+
 function SelectField({
   label,
   icon: Icon,
   children,
+  disabled,
   ...props
 }) {
   return (
@@ -469,13 +754,22 @@ function SelectField({
         {label}
       </label>
 
-      <div className="flex h-14 items-center gap-3 rounded-2xl border border-[#DDD3C7] bg-[#FAF6F0] px-4">
+      <div
+        className={`flex h-14 items-center gap-3 rounded-2xl border border-[#DDD3C7] bg-[#FAF6F0] px-4 transition focus-within:border-[#B88F66] ${
+          disabled
+            ? "opacity-60"
+            : ""
+        }`}
+      >
 
-        <Icon className="h-4 w-4 text-[#A1978C]" />
+        <Icon className="h-4 w-4 shrink-0 text-[#A1978C]" />
 
         <select
           {...props}
-          className="h-full w-full bg-transparent text-sm outline-none"
+          disabled={
+            disabled
+          }
+          className="h-full w-full bg-transparent text-sm outline-none disabled:cursor-not-allowed"
         >
           {children}
         </select>

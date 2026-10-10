@@ -1,4 +1,5 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -18,30 +19,286 @@ import {
   CheckCircle2,
   ChevronRight,
   Clock3,
-  Eye,
   History,
+  LoaderCircle,
   LogOut,
   MapPin,
   Plus,
   RadioTower,
+  RefreshCw,
   ScanLine,
+  ShieldAlert,
   ShieldCheck,
   Stethoscope,
   UserRound,
 } from "lucide-react";
 
 import {
-  clearCurrentUser,
-  getCurrentProcedure,
-  getCurrentUser,
   getProcedureHistory,
-  getRfidScans,
-  getVisionStatus,
+  getProcedures,
+} from "../services/api";
+
+import {
+  clearCurrentUser,
+  getCurrentProcedureId,
+  getCurrentUser,
+  saveCurrentProcedureId,
 } from "../utils/demoStore";
+
+
+/* =========================================================
+   STATUS HELPERS
+========================================================= */
+
+function normalizeStatus(
+  status
+) {
+  return String(
+    status || ""
+  )
+    .trim()
+    .toLowerCase()
+    .replace(
+      /[\s-]+/g,
+      "_"
+    );
+}
+
+
+function isCompletedStatus(
+  status
+) {
+  const value =
+    normalizeStatus(
+      status
+    );
+
+  return [
+    "completed",
+    "complete",
+    "archived",
+    "cancelled",
+    "canceled",
+  ].includes(
+    value
+  );
+}
+
+
+function formatStatus(
+  status
+) {
+  const value =
+    normalizeStatus(
+      status
+    );
+
+  const labels = {
+    created:
+      "Created",
+
+    pending:
+      "Pending",
+
+    rfid_registration:
+      "RFID Registration",
+
+    pre_op:
+      "Pre-Op",
+
+    active:
+      "Procedure Active",
+
+    in_progress:
+      "Procedure Active",
+
+    post_op:
+      "Post-Op",
+
+    reconciliation:
+      "Reconciliation",
+
+    completed:
+      "Completed",
+
+    complete:
+      "Completed",
+
+    archived:
+      "Archived",
+
+    cancelled:
+      "Cancelled",
+
+    canceled:
+      "Cancelled",
+  };
+
+  return (
+    labels[value] ||
+    String(
+      status || "Unknown"
+    )
+  );
+}
+
+
+/* =========================================================
+   RESUME ROUTE
+========================================================= */
+
+function getResumeRoute(
+  status
+) {
+  const value =
+    normalizeStatus(
+      status
+    );
+
+  if (
+    value ===
+      "pre_op" ||
+    value ===
+      "preop"
+  ) {
+    return "/pre-op-scan";
+  }
+
+  if (
+    value ===
+      "active" ||
+    value ===
+      "in_progress"
+  ) {
+    return "/procedure-active";
+  }
+
+  if (
+    value ===
+      "post_op" ||
+    value ===
+      "postop"
+  ) {
+    return "/post-op-scan";
+  }
+
+  if (
+    value ===
+    "reconciliation"
+  ) {
+    return "/final-reconciliation";
+  }
+
+  return "/rfid-registration";
+}
+
+
+/* =========================================================
+   DATE HELPERS
+========================================================= */
+
+function formatDate(
+  value
+) {
+  if (!value) {
+    return "—";
+  }
+
+  const date =
+    new Date(
+      value
+    );
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "—";
+  }
+
+  return date.toLocaleDateString();
+}
+
+
+function formatTime(
+  value
+) {
+  if (!value) {
+    return "—";
+  }
+
+  const date =
+    new Date(
+      value
+    );
+
+  if (
+    Number.isNaN(
+      date.getTime()
+    )
+  ) {
+    return "—";
+  }
+
+  return date.toLocaleTimeString(
+    [],
+    {
+      hour:
+        "2-digit",
+
+      minute:
+        "2-digit",
+    }
+  );
+}
+
+
+/* =========================================================
+   NORMALIZE API ARRAY
+========================================================= */
+
+function normalizeArray(
+  result
+) {
+  if (
+    Array.isArray(
+      result
+    )
+  ) {
+    return result;
+  }
+
+  if (
+    Array.isArray(
+      result?.items
+    )
+  ) {
+    return result.items;
+  }
+
+  if (
+    Array.isArray(
+      result?.procedures
+    )
+  ) {
+    return result.procedures;
+  }
+
+  return [];
+}
+
+
+/* =========================================================
+   DASHBOARD
+========================================================= */
 
 export default function Dashboard() {
   const navigate =
     useNavigate();
+
+  const user =
+    getCurrentUser();
 
   const [
     activeTab,
@@ -51,134 +308,397 @@ export default function Dashboard() {
   );
 
   const [
-    user,
-    setUser,
-  ] = useState(
-    getCurrentUser()
-  );
-
-  const [
-    procedure,
-    setProcedure,
-  ] = useState(
-    getCurrentProcedure()
-  );
-
-  const [
-    scans,
-    setScans,
-  ] = useState(
-    getRfidScans()
-  );
-
-  const [
-    vision,
-    setVision,
-  ] = useState(
-    getVisionStatus()
-  );
+    procedures,
+    setProcedures,
+  ] = useState([]);
 
   const [
     history,
     setHistory,
-  ] = useState(
-    getProcedureHistory()
-  );
+  ] = useState([]);
+
+  const [
+    activeProcedure,
+    setActiveProcedure,
+  ] = useState(null);
+
+  const [
+    loading,
+    setLoading,
+  ] = useState(true);
+
+  const [
+    refreshing,
+    setRefreshing,
+  ] = useState(false);
+
+  const [
+    error,
+    setError,
+  ] = useState("");
+
+
+  /* =========================================================
+     LOAD REAL BACKEND DATA
+  ========================================================= */
+
+  const loadDashboard =
+    useCallback(
+      async (
+        manualRefresh = false
+      ) => {
+        if (
+          manualRefresh
+        ) {
+          setRefreshing(
+            true
+          );
+        } else {
+          setLoading(
+            true
+          );
+        }
+
+        setError("");
+
+        try {
+          const [
+            proceduresResult,
+            historyResult,
+          ] =
+            await Promise.all([
+              getProcedures(),
+              getProcedureHistory(),
+            ]);
+
+          const procedureList =
+            normalizeArray(
+              proceduresResult
+            );
+
+          const historyList =
+            normalizeArray(
+              historyResult
+            );
+
+
+          setProcedures(
+            procedureList
+          );
+
+
+          /*
+           * Some backends return all
+           * history records, while
+           * others may return only
+           * completed procedures.
+           *
+           * Keep completed records.
+           */
+
+          const completed =
+            historyList.length >
+            0
+              ? historyList
+              : procedureList.filter(
+                  (
+                    procedure
+                  ) =>
+                    isCompletedStatus(
+                      procedure.status
+                    )
+                );
+
+          setHistory(
+            completed
+          );
+
+
+          /* ===============================================
+             RESTORE CURRENT PROCEDURE
+          =============================================== */
+
+          const storedId =
+            getCurrentProcedureId();
+
+          let current =
+            null;
+
+
+          /*
+           * First preference:
+           * procedure ID already
+           * selected on this browser.
+           */
+
+          if (
+            storedId
+          ) {
+            current =
+              procedureList.find(
+                (
+                  procedure
+                ) =>
+                  Number(
+                    procedure.id
+                  ) ===
+                    Number(
+                      storedId
+                    ) &&
+                  !isCompletedStatus(
+                    procedure.status
+                  )
+              ) ||
+              null;
+          }
+
+
+          /*
+           * Browser may have been
+           * refreshed or storage was
+           * cleared.
+           *
+           * Fall back to latest active
+           * backend procedure.
+           */
+
+          if (
+            !current
+          ) {
+            const active =
+              procedureList
+                .filter(
+                  (
+                    procedure
+                  ) =>
+                    !isCompletedStatus(
+                      procedure.status
+                    )
+                )
+                .sort(
+                  (
+                    a,
+                    b
+                  ) =>
+                    new Date(
+                      b.updated_at ||
+                      b.created_at ||
+                      0
+                    ) -
+                    new Date(
+                      a.updated_at ||
+                      a.created_at ||
+                      0
+                    )
+                );
+
+            current =
+              active[0] ||
+              null;
+          }
+
+
+          if (
+            current?.id
+          ) {
+            saveCurrentProcedureId(
+              current.id
+            );
+          }
+
+          setActiveProcedure(
+            current
+          );
+        } catch (
+          loadError
+        ) {
+          console.error(
+            "Dashboard load failed:",
+            loadError
+          );
+
+          setError(
+            loadError?.message ||
+            "Unable to load SurgiTrack dashboard."
+          );
+        } finally {
+          setLoading(
+            false
+          );
+
+          setRefreshing(
+            false
+          );
+        }
+      },
+      []
+    );
+
 
   useEffect(() => {
-    setUser(
-      getCurrentUser()
+    loadDashboard();
+  }, [
+    loadDashboard,
+  ]);
+
+
+  /* =========================================================
+     DASHBOARD STATS
+  ========================================================= */
+
+  const stats =
+    useMemo(
+      () => {
+        const allRooms =
+          new Set(
+            history
+              .map(
+                (
+                  item
+                ) =>
+                  item.ot_room
+              )
+              .filter(
+                Boolean
+              )
+          );
+
+        const safeCount =
+          history.filter(
+            (
+              item
+            ) =>
+              normalizeStatus(
+                item.status
+              ) ===
+                "completed" ||
+              normalizeStatus(
+                item.status
+              ) ===
+                "complete"
+          ).length;
+
+        return {
+          completed:
+            history.length,
+
+          rooms:
+            allRooms.size,
+
+          safeCount,
+
+          allProcedures:
+            procedures.length,
+        };
+      },
+      [
+        history,
+        procedures,
+      ]
     );
 
-    setProcedure(
-      getCurrentProcedure()
-    );
 
-    setScans(
-      getRfidScans()
-    );
+  /* =========================================================
+     LOGOUT
+  ========================================================= */
 
-    setVision(
-      getVisionStatus()
-    );
+  const logout =
+    () => {
+      clearCurrentUser();
 
-    setHistory(
-      getProcedureHistory()
-    );
-  }, []);
-
-  const historyStats =
-    useMemo(() => {
-      const instruments =
-        history.reduce(
-          (
-            total,
-            record
-          ) =>
-            total +
-            Number(
-              record.instrumentCount ||
-                0
-            ),
-          0
-        );
-
-      const otRooms =
-        new Set(
-          history
-            .map(
-              (
-                record
-              ) =>
-                record.otRoom
-            )
-            .filter(
-              Boolean
-            )
-        );
-
-      return {
-        procedures:
-          history.length,
-
-        instruments,
-
-        otRooms:
-          otRooms.size,
-      };
-    }, [
-      history,
-    ]);
-
-  const logout = () => {
-    clearCurrentUser();
-
-    navigate(
-      "/",
-      {
-        replace: true,
-      }
-    );
-  };
-
-  const mainAction = () => {
-    if (procedure) {
       navigate(
-        "/rfid-registration"
+        "/",
+        {
+          replace: true,
+        }
+      );
+    };
+
+
+  /* =========================================================
+     START / CONTINUE
+  ========================================================= */
+
+  const mainAction =
+    () => {
+      if (
+        activeProcedure
+      ) {
+        saveCurrentProcedureId(
+          activeProcedure.id
+        );
+
+        navigate(
+          getResumeRoute(
+            activeProcedure.status
+          )
+        );
+
+        return;
+      }
+
+      navigate(
+        "/new-procedure"
+      );
+    };
+
+
+  /* =========================================================
+     SELECT PROCEDURE
+  ========================================================= */
+
+  const resumeProcedure =
+    (
+      procedure
+    ) => {
+      if (
+        !procedure?.id
+      ) {
+        return;
+      }
+
+      saveCurrentProcedureId(
+        procedure.id
       );
 
-      return;
-    }
+      navigate(
+        getResumeRoute(
+          procedure.status
+        )
+      );
+    };
 
-    navigate(
-      "/new-procedure"
+
+  /* =========================================================
+     LOADING
+  ========================================================= */
+
+  if (
+    loading
+  ) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#F5F0E8]">
+
+        <div className="flex items-center gap-3 text-sm text-[#887D72]">
+
+          <LoaderCircle className="h-5 w-5 animate-spin" />
+
+          Loading SurgiTrack...
+
+        </div>
+
+      </div>
     );
-  };
+  }
+
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#F5F0E8] text-[#2D2A26]">
 
-      {/* BACKGROUND */}
+
+      {/* =====================================================
+          BACKGROUND
+      ===================================================== */}
 
       <div className="pointer-events-none fixed inset-0">
 
@@ -205,7 +725,10 @@ export default function Dashboard() {
 
       </div>
 
-      {/* HEADER */}
+
+      {/* =====================================================
+          HEADER
+      ===================================================== */}
 
       <header className="sticky top-0 z-40 border-b border-[#E1D8CC] bg-[#F8F4EE]/84 backdrop-blur-2xl">
 
@@ -233,9 +756,35 @@ export default function Dashboard() {
 
           </div>
 
+
           {/* USER */}
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
+
+            <button
+              type="button"
+              title="Refresh dashboard"
+              onClick={() =>
+                loadDashboard(
+                  true
+                )
+              }
+              disabled={
+                refreshing
+              }
+              className="flex h-10 w-10 items-center justify-center rounded-xl border border-[#DED4C8] bg-[#FFFDF9] text-[#968C82]"
+            >
+
+              <RefreshCw
+                className={`h-4 w-4 ${
+                  refreshing
+                    ? "animate-spin"
+                    : ""
+                }`}
+              />
+
+            </button>
+
 
             <div className="hidden text-right sm:block">
 
@@ -244,10 +793,17 @@ export default function Dashboard() {
               </div>
 
               <div className="text-[11px] text-[#968C82]">
-                {user.employeeId} · {user.role}
+
+                {user.employeeId}
+
+                {" · "}
+
+                {user.role}
+
               </div>
 
             </div>
+
 
             <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#D2C3B1] bg-[#F6EEE4]">
 
@@ -255,7 +811,9 @@ export default function Dashboard() {
 
             </div>
 
+
             <button
+              type="button"
               onClick={
                 logout
               }
@@ -273,9 +831,13 @@ export default function Dashboard() {
 
       </header>
 
-      {/* MAIN */}
+
+      {/* =====================================================
+          MAIN
+      ===================================================== */}
 
       <main className="relative z-10 mx-auto max-w-[1550px] px-5 py-9 lg:px-8">
+
 
         {/* HERO */}
 
@@ -295,13 +857,21 @@ export default function Dashboard() {
 
             <p className="mt-2 text-sm text-[#8B8178]">
 
-              {procedure
-                ? `${procedure.caseId} · ${procedure.otRoom}`
+              {activeProcedure
+                ? `${
+                    activeProcedure.case_id
+                  } · ${
+                    activeProcedure.ot_room ||
+                    "OT"
+                  } · ${formatStatus(
+                    activeProcedure.status
+                  )}`
                 : "Ready for a new procedure"}
 
             </p>
 
           </div>
+
 
           {activeTab ===
             "overview" && (
@@ -318,17 +888,21 @@ export default function Dashboard() {
 
               <span className="relative z-10 flex items-center gap-2">
 
-                {procedure ? (
+                {activeProcedure ? (
                   <>
+
                     Continue Procedure
 
                     <ChevronRight className="h-4 w-4" />
+
                   </>
                 ) : (
                   <>
+
                     <Plus className="h-4 w-4" />
 
                     Start New Procedure
+
                   </>
                 )}
 
@@ -340,7 +914,25 @@ export default function Dashboard() {
 
         </div>
 
-        {/* TABS */}
+
+        {/* ERROR */}
+
+        {error && (
+
+          <div className="mt-6 flex items-start gap-3 rounded-2xl border border-[#E3C6BF] bg-[#FBF0ED] px-4 py-3 text-xs leading-5 text-[#A15E54]">
+
+            <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
+
+            {error}
+
+          </div>
+
+        )}
+
+
+        {/* ===================================================
+            TABS
+        =================================================== */}
 
         <div className="mt-8 inline-flex rounded-2xl border border-[#DDD2C5] bg-[#FFFDF9]/80 p-1.5 backdrop-blur-xl">
 
@@ -368,7 +960,7 @@ export default function Dashboard() {
             icon={
               History
             }
-            label={`My History (${history.length})`}
+            label={`History (${history.length})`}
             onClick={() =>
               setActiveTab(
                 "history"
@@ -378,9 +970,10 @@ export default function Dashboard() {
 
         </div>
 
-        {/* ==================================================
+
+        {/* ===================================================
             OVERVIEW
-        ================================================== */}
+        =================================================== */}
 
         {activeTab ===
           "overview" && (
@@ -397,6 +990,7 @@ export default function Dashboard() {
             }}
           >
 
+
             {/* METRICS */}
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -407,42 +1001,16 @@ export default function Dashboard() {
                 }
                 title="Active Procedure"
                 value={
-                  procedure
+                  activeProcedure
                     ? "01"
                     : "00"
                 }
                 caption={
-                  procedure
-                    ? procedure.caseId
+                  activeProcedure
+                    ? activeProcedure
+                        .case_id
                     : "No active case"
                 }
-              />
-
-              <StatCard
-                icon={
-                  RadioTower
-                }
-                title="Current RFID"
-                value={String(
-                  scans.length
-                ).padStart(
-                  2,
-                  "0"
-                )}
-                caption="Active procedure"
-              />
-
-              <StatCard
-                icon={
-                  Eye
-                }
-                title="Pre-Op Vision"
-                value={
-                  vision.preOpCaptured
-                    ? "Ready"
-                    : "—"
-                }
-                caption="Current procedure"
               />
 
               <StatCard
@@ -450,24 +1018,60 @@ export default function Dashboard() {
                   History
                 }
                 title="Completed Procedures"
-                value={String(
-                  history.length
-                ).padStart(
-                  2,
-                  "0"
-                )}
-                caption="Your history"
+                value={
+                  String(
+                    stats.completed
+                  ).padStart(
+                    2,
+                    "0"
+                  )
+                }
+                caption="Backend history"
+              />
+
+              <StatCard
+                icon={
+                  MapPin
+                }
+                title="OT Rooms"
+                value={
+                  String(
+                    stats.rooms
+                  ).padStart(
+                    2,
+                    "0"
+                  )
+                }
+                caption="Historical activity"
+              />
+
+              <StatCard
+                icon={
+                  ShieldCheck
+                }
+                title="Database Records"
+                value={
+                  String(
+                    stats.allProcedures
+                  ).padStart(
+                    2,
+                    "0"
+                  )
+                }
+                caption="Total procedures"
               />
 
             </div>
 
-            {/* CURRENT PROCEDURE */}
+
+            {/* ACTIVE PROCEDURE */}
 
             <div className="mt-6 grid gap-6 xl:grid-cols-[1.35fr_.65fr]">
 
+
               <section className="rounded-[28px] border border-[#DED3C6] bg-[#FFFDF9]/86 p-7 shadow-[0_20px_55px_rgba(80,62,42,.06)] backdrop-blur-xl">
 
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-4">
 
                   <div>
 
@@ -481,17 +1085,23 @@ export default function Dashboard() {
 
                   </div>
 
-                  {procedure && (
+
+                  {activeProcedure && (
 
                     <span className="rounded-full border border-[#BDD0B8] bg-[#F2F8EF] px-3 py-1.5 text-[10px] font-semibold text-[#698067]">
-                      ACTIVE
+
+                      {formatStatus(
+                        activeProcedure.status
+                      ).toUpperCase()}
+
                     </span>
 
                   )}
 
                 </div>
 
-                {!procedure ? (
+
+                {!activeProcedure ? (
 
                   <div className="flex min-h-[300px] flex-col items-center justify-center text-center">
 
@@ -506,10 +1116,11 @@ export default function Dashboard() {
                     </h3>
 
                     <p className="mt-2 max-w-md text-sm leading-6 text-[#968C82]">
-                      Completed procedures remain safely stored in your history. Start a new case when ready.
+                      Completed procedures remain in the backend history. Start a new case when ready.
                     </p>
 
                     <button
+                      type="button"
                       onClick={() =>
                         navigate(
                           "/new-procedure"
@@ -528,73 +1139,136 @@ export default function Dashboard() {
 
                 ) : (
 
-                  <div className="mt-7 grid gap-4 sm:grid-cols-2">
+                  <>
 
-                    <InfoBox
-                      title="Case ID"
-                      value={
-                        procedure.caseId
-                      }
-                    />
+                    <div className="mt-7 grid gap-4 sm:grid-cols-2">
 
-                    <InfoBox
-                      title="Operating Theatre"
-                      value={
-                        procedure.otRoom
-                      }
-                    />
+                      <InfoBox
+                        title="Case ID"
+                        value={
+                          activeProcedure
+                            .case_id
+                        }
+                      />
 
-                    <InfoBox
-                      title="Procedure"
-                      value={
-                        procedure.procedureName
-                      }
-                    />
+                      <InfoBox
+                        title="Operating Theatre"
+                        value={
+                          activeProcedure
+                            .ot_room
+                        }
+                      />
 
-                    <InfoBox
-                      title="Lead Surgeon"
-                      value={
-                        procedure.surgeon
-                      }
-                    />
+                      <InfoBox
+                        title="Procedure"
+                        value={
+                          activeProcedure
+                            .procedure_name
+                        }
+                      />
 
-                  </div>
+                      <InfoBox
+                        title="Lead Surgeon"
+                        value={
+                          activeProcedure
+                            .surgeon_name
+                        }
+                      />
+
+                    </div>
+
+
+                    <div className="mt-6 flex flex-col justify-between gap-4 rounded-2xl border border-[#DFD6CB] bg-[#FAF7F2] p-4 sm:flex-row sm:items-center">
+
+                      <div>
+
+                        <div className="text-[9px] font-semibold uppercase tracking-[0.13em] text-[#998E83]">
+                          Current Stage
+                        </div>
+
+                        <div className="mt-1 text-sm font-semibold">
+                          {formatStatus(
+                            activeProcedure
+                              .status
+                          )}
+                        </div>
+
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() =>
+                          resumeProcedure(
+                            activeProcedure
+                          )
+                        }
+                        className="flex h-10 items-center justify-center gap-2 rounded-xl bg-[#A27A53] px-5 text-xs font-semibold text-white"
+                      >
+
+                        Resume
+
+                        <ChevronRight className="h-4 w-4" />
+
+                      </button>
+
+                    </div>
+
+                  </>
 
                 )}
 
               </section>
 
-              {/* PERSON SUMMARY */}
+
+              {/* USER SUMMARY */}
 
               <section className="rounded-[28px] border border-[#DED3C6] bg-[#FFFDF9]/86 p-7 backdrop-blur-xl">
 
                 <div className="text-[11px] font-semibold uppercase tracking-[0.15em] text-[#98704A]">
-                  My Activity
+                  Current User
                 </div>
 
                 <h2 className="mt-2 text-xl font-semibold">
-                  OT summary
+                  OT access
                 </h2>
 
-                <div className="mt-6 space-y-3">
+
+                <div className="mt-6 flex items-center gap-4 rounded-2xl border border-[#E3DAD0] bg-[#FAF7F2] p-4">
+
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#F0E5D8]">
+
+                    <UserRound className="h-5 w-5 text-[#A27A53]" />
+
+                  </div>
+
+                  <div>
+
+                    <div className="text-sm font-semibold">
+                      {user.name}
+                    </div>
+
+                    <div className="mt-1 text-xs text-[#887D73]">
+                      {user.role}
+                    </div>
+
+                    <div className="mt-1 font-mono text-[10px] text-[#A0958A]">
+                      {user.employeeId}
+                    </div>
+
+                  </div>
+
+                </div>
+
+
+                <div className="mt-5 space-y-3">
 
                   <ActivityRow
                     icon={
                       CheckCircle2
                     }
-                    title="Procedures attended"
+                    title="Completed procedures"
                     value={
-                      historyStats.procedures
-                    }
-                  />
-
-                  <ActivityRow
-                    icon={
-                      RadioTower
-                    }
-                    title="Instruments handled"
-                    value={
-                      historyStats.instruments
+                      stats.completed
                     }
                   />
 
@@ -602,15 +1276,25 @@ export default function Dashboard() {
                     icon={
                       MapPin
                     }
-                    title="OT rooms attended"
+                    title="OT rooms recorded"
                     value={
-                      historyStats.otRooms
+                      stats.rooms
                     }
+                  />
+
+                  <ActivityRow
+                    icon={
+                      RadioTower
+                    }
+                    title="System"
+                    value="Online"
                   />
 
                 </div>
 
+
                 <button
+                  type="button"
                   onClick={() =>
                     setActiveTab(
                       "history"
@@ -621,7 +1305,7 @@ export default function Dashboard() {
 
                   <History className="h-4 w-4" />
 
-                  View My History
+                  View Procedure History
 
                 </button>
 
@@ -629,13 +1313,126 @@ export default function Dashboard() {
 
             </div>
 
+
+            {/* OTHER ACTIVE PROCEDURES */}
+
+            {procedures.filter(
+              (
+                item
+              ) =>
+                !isCompletedStatus(
+                  item.status
+                ) &&
+                Number(
+                  item.id
+                ) !==
+                  Number(
+                    activeProcedure?.id
+                  )
+            ).length >
+              0 && (
+
+              <section className="mt-6 overflow-hidden rounded-[28px] border border-[#DED3C6] bg-[#FFFDF9]/88">
+
+                <div className="border-b border-[#E8E0D7] px-6 py-5">
+
+                  <h2 className="font-semibold">
+                    Other open procedures
+                  </h2>
+
+                  <p className="mt-1 text-xs text-[#958B81]">
+                    Open cases currently stored in the backend.
+                  </p>
+
+                </div>
+
+
+                <div className="divide-y divide-[#ECE4DB]">
+
+                  {procedures
+                    .filter(
+                      (
+                        item
+                      ) =>
+                        !isCompletedStatus(
+                          item.status
+                        ) &&
+                        Number(
+                          item.id
+                        ) !==
+                          Number(
+                            activeProcedure?.id
+                          )
+                    )
+                    .map(
+                      (
+                        item
+                      ) => (
+
+                        <button
+                          key={
+                            item.id
+                          }
+                          type="button"
+                          onClick={() =>
+                            resumeProcedure(
+                              item
+                            )
+                          }
+                          className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left transition hover:bg-[#FBF8F4]"
+                        >
+
+                          <div>
+
+                            <div className="text-sm font-semibold">
+                              {item.procedure_name}
+                            </div>
+
+                            <div className="mt-1 text-xs text-[#92877D]">
+
+                              {item.case_id}
+
+                              {" · "}
+
+                              {item.ot_room ||
+                                "OT"}
+
+                            </div>
+
+                          </div>
+
+
+                          <div className="flex items-center gap-3">
+
+                            <span className="rounded-full bg-[#F2E8DC] px-3 py-1.5 text-[9px] font-semibold text-[#92704F]">
+                              {formatStatus(
+                                item.status
+                              )}
+                            </span>
+
+                            <ChevronRight className="h-4 w-4 text-[#A0958A]" />
+
+                          </div>
+
+                        </button>
+
+                      )
+                    )}
+
+                </div>
+
+              </section>
+
+            )}
+
           </motion.div>
 
         )}
 
-        {/* ==================================================
+
+        {/* ===================================================
             HISTORY
-        ================================================== */}
+        =================================================== */}
 
         {activeTab ===
           "history" && (
@@ -652,6 +1449,7 @@ export default function Dashboard() {
             }}
           >
 
+
             {/* HISTORY METRICS */}
 
             <div className="mt-6 grid gap-4 md:grid-cols-3">
@@ -660,19 +1458,9 @@ export default function Dashboard() {
                 icon={
                   Stethoscope
                 }
-                label="Procedures Attended"
+                label="Completed Procedures"
                 value={
-                  historyStats.procedures
-                }
-              />
-
-              <HistoryMetric
-                icon={
-                  RadioTower
-                }
-                label="Instruments Used"
-                value={
-                  historyStats.instruments
+                  stats.completed
                 }
               />
 
@@ -680,29 +1468,68 @@ export default function Dashboard() {
                 icon={
                   MapPin
                 }
-                label="OT Rooms Attended"
+                label="OT Rooms"
                 value={
-                  historyStats.otRooms
+                  stats.rooms
+                }
+              />
+
+              <HistoryMetric
+                icon={
+                  DatabaseIcon
+                }
+                label="Database Procedures"
+                value={
+                  stats.allProcedures
                 }
               />
 
             </div>
 
+
             {/* HISTORY LIST */}
 
             <section className="mt-6 overflow-hidden rounded-[28px] border border-[#DED3C6] bg-[#FFFDF9]/88 shadow-[0_20px_55px_rgba(80,62,42,.06)] backdrop-blur-xl">
 
-              <div className="border-b border-[#E8E0D7] px-6 py-5">
+              <div className="flex items-center justify-between border-b border-[#E8E0D7] px-6 py-5">
 
-                <h2 className="font-semibold">
-                  Procedure history
-                </h2>
+                <div>
 
-                <p className="mt-1 text-xs text-[#958B81]">
-                  Procedures attended by {user.name}
-                </p>
+                  <h2 className="font-semibold">
+                    Procedure history
+                  </h2>
+
+                  <p className="mt-1 text-xs text-[#958B81]">
+                    Records loaded from the SurgiTrack backend
+                  </p>
+
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    loadDashboard(
+                      true
+                    )
+                  }
+                  disabled={
+                    refreshing
+                  }
+                  className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#DDD2C6]"
+                >
+
+                  <RefreshCw
+                    className={`h-4 w-4 ${
+                      refreshing
+                        ? "animate-spin"
+                        : ""
+                    }`}
+                  />
+
+                </button>
 
               </div>
+
 
               {history.length ===
               0 ? (
@@ -716,7 +1543,7 @@ export default function Dashboard() {
                   </h3>
 
                   <p className="mt-2 max-w-md text-sm leading-6 text-[#978D83]">
-                    Once a procedure is completed and archived, it will appear here.
+                    Procedures completed through SurgiTrack will appear here.
                   </p>
 
                 </div>
@@ -733,7 +1560,8 @@ export default function Dashboard() {
 
                       <HistoryCard
                         key={
-                          record.historyId
+                          record.id ||
+                          `${record.case_id}-${index}`
                         }
                         record={
                           record
@@ -762,9 +1590,10 @@ export default function Dashboard() {
   );
 }
 
-/* ======================================================
-   COMPONENTS
-====================================================== */
+
+/* =========================================================
+   TAB BUTTON
+========================================================= */
 
 function TabButton({
   active,
@@ -774,6 +1603,7 @@ function TabButton({
 }) {
   return (
     <button
+      type="button"
       onClick={
         onClick
       }
@@ -791,6 +1621,11 @@ function TabButton({
     </button>
   );
 }
+
+
+/* =========================================================
+   STAT CARD
+========================================================= */
 
 function StatCard({
   icon: Icon,
@@ -824,6 +1659,11 @@ function StatCard({
   );
 }
 
+
+/* =========================================================
+   INFO BOX
+========================================================= */
+
 function InfoBox({
   title,
   value,
@@ -842,6 +1682,11 @@ function InfoBox({
     </div>
   );
 }
+
+
+/* =========================================================
+   ACTIVITY ROW
+========================================================= */
 
 function ActivityRow({
   icon: Icon,
@@ -865,13 +1710,18 @@ function ActivityRow({
 
       </div>
 
-      <span className="text-lg font-semibold">
+      <span className="text-sm font-semibold">
         {value}
       </span>
 
     </div>
   );
 }
+
+
+/* =========================================================
+   HISTORY METRIC
+========================================================= */
 
 function HistoryMetric({
   icon: Icon,
@@ -895,16 +1745,33 @@ function HistoryMetric({
   );
 }
 
+
+/* =========================================================
+   DATABASE ICON WRAPPER
+========================================================= */
+
+function DatabaseIcon(
+  props
+) {
+  return (
+    <ShieldCheck
+      {...props}
+    />
+  );
+}
+
+
+/* =========================================================
+   HISTORY CARD
+========================================================= */
+
 function HistoryCard({
   record,
   index,
 }) {
-  const completedDate =
-    record.completedAt
-      ? new Date(
-          record.completedAt
-        )
-      : null;
+  const date =
+    record.updated_at ||
+    record.created_at;
 
   return (
     <motion.div
@@ -918,12 +1785,11 @@ function HistoryCard({
       }}
       transition={{
         delay:
-          index * 0.05,
+          index *
+          0.04,
       }}
       className="rounded-[22px] border border-[#DED4C8] bg-[#FBF8F4] p-5"
     >
-
-      {/* TOP */}
 
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-start">
 
@@ -932,151 +1798,146 @@ function HistoryCard({
           <div className="flex flex-wrap items-center gap-2">
 
             <div className="text-lg font-semibold">
-              {record.procedureName}
+              {record.procedure_name ||
+                "Procedure"}
             </div>
 
-            <span className="rounded-full bg-[#E5EFE2] px-3 py-1 text-[9px] font-semibold text-[#698067]">
-              COMPLETED
-            </span>
+            <HistoryStatusBadge
+              status={
+                record.status
+              }
+            />
 
           </div>
+
 
           <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-xs text-[#887E74]">
 
             <span>
-              {record.caseId}
+              {record.case_id ||
+                "—"}
             </span>
 
             <span className="flex items-center gap-1.5">
 
               <MapPin className="h-3.5 w-3.5" />
 
-              {record.otRoom}
+              {record.ot_room ||
+                "—"}
 
             </span>
 
-            {completedDate && (
+            <span className="flex items-center gap-1.5">
 
-              <span className="flex items-center gap-1.5">
+              <CalendarDays className="h-3.5 w-3.5" />
 
-                <CalendarDays className="h-3.5 w-3.5" />
+              {formatDate(
+                date
+              )}
 
-                {completedDate.toLocaleDateString()}
+            </span>
 
-              </span>
+            <span className="flex items-center gap-1.5">
 
-            )}
+              <Clock3 className="h-3.5 w-3.5" />
+
+              {formatTime(
+                date
+              )}
+
+            </span>
 
           </div>
 
         </div>
 
+
         <div className="rounded-xl bg-[#F0E5D8] px-4 py-2 text-center">
 
-          <div className="text-lg font-semibold text-[#8E6844]">
-            {record.instrumentCount}
+          <div className="text-[9px] uppercase tracking-wider text-[#9A8775]">
+            Procedure ID
           </div>
 
-          <div className="text-[9px] uppercase tracking-wider text-[#9A8775]">
-            Instruments
+          <div className="mt-1 text-lg font-semibold text-[#8E6844]">
+            #{record.id}
           </div>
 
         </div>
 
       </div>
 
-      {/* DETAILS */}
 
       <div className="mt-5 grid gap-3 md:grid-cols-3">
 
         <HistoryInfo
           title="Lead Surgeon"
           value={
-            record.surgeon
+            record.surgeon_name
           }
         />
 
         <HistoryInfo
-          title="Attended As"
+          title="Operating Theatre"
           value={
-            record
-              .attendedBy
-              ?.role ||
-            "—"
+            record.ot_room
           }
         />
 
         <HistoryInfo
-          title="Completed"
+          title="Final Status"
           value={
-            completedDate
-              ? completedDate.toLocaleTimeString(
-                  [],
-                  {
-                    hour:
-                      "2-digit",
-                    minute:
-                      "2-digit",
-                  }
-                )
-              : "—"
+            formatStatus(
+              record.status
+            )
           }
         />
-
-      </div>
-
-      {/* INSTRUMENTS */}
-
-      <div className="mt-5 border-t border-[#E6DDD3] pt-4">
-
-        <div className="mb-3 text-[10px] font-semibold uppercase tracking-[0.13em] text-[#968B81]">
-          Instruments / RFID Records
-        </div>
-
-        {record.rfidScans
-          ?.length > 0 ? (
-
-          <div className="flex flex-wrap gap-2">
-
-            {record.rfidScans.map(
-              (
-                scan
-              ) => {
-
-                const label =
-                  scan
-                    ?.instrument
-                    ?.name ||
-                  scan.uid;
-
-                return (
-                  <span
-                    key={
-                      scan.uid
-                    }
-                    className="rounded-lg border border-[#DDD2C6] bg-[#FFFDF9] px-3 py-2 font-mono text-[10px] text-[#74695F]"
-                  >
-                    {label}
-                  </span>
-                );
-              }
-            )}
-
-          </div>
-
-        ) : (
-
-          <div className="text-xs text-[#968C82]">
-            No instrument records.
-          </div>
-
-        )}
 
       </div>
 
     </motion.div>
   );
 }
+
+
+/* =========================================================
+   HISTORY STATUS
+========================================================= */
+
+function HistoryStatusBadge({
+  status,
+}) {
+  const normalized =
+    normalizeStatus(
+      status
+    );
+
+  const cancelled =
+    normalized ===
+      "cancelled" ||
+    normalized ===
+      "canceled";
+
+  return (
+    <span
+      className={`rounded-full px-3 py-1 text-[9px] font-semibold ${
+        cancelled
+          ? "bg-[#FAEAE6] text-[#A46158]"
+          : "bg-[#E5EFE2] text-[#698067]"
+      }`}
+    >
+
+      {formatStatus(
+        status
+      ).toUpperCase()}
+
+    </span>
+  );
+}
+
+
+/* =========================================================
+   HISTORY INFO
+========================================================= */
 
 function HistoryInfo({
   title,
