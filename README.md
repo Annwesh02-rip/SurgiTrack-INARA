@@ -728,7 +728,7 @@ M.Tech Biotechnology
 
 # Achievement
 
-## 🥈 2nd Place — WhyCode_4U 2026 Hackathon
+## 🥈 2nd Place — INARA 2026 BIOHACKATHON
 
 Developed by **Team Genomix**, SurgiTrack secured **2nd Place** at the WhyCode_4U 2026 Hackathon.
 
