@@ -719,10 +719,10 @@ M.Tech Biotechnology
 
 ## Team Members
 
-- **Annwesh**
-- **Hritwika**
-- **Swastik**
-- **Prerna**
+- **Annwesh Hazra**
+- **Hritwika Dutta Majumder**
+- **Swastik Rana**
+- **Prerna Manna**
 
 ---
 
