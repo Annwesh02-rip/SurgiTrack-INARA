@@ -1,6 +1,6 @@
 # SurgiTrack — Intelligent Surgical Instrument Reconciliation System
 
-🥈 **2nd Place — WhyCode_4U 2026 Hackathon**  
+🥈 **2nd Place — INARA BIOHACKATHON 2026**  
 Built by **Team Genomix**
 
 ---
